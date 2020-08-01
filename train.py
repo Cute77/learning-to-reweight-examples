@@ -34,11 +34,12 @@ def build_model():
 
 def train_net(lr=1e-3,
               momentum=0.9, 
-              batch_size=100,
+              batch_size=128,
               num_iterations=8000, 
               dir_img=args.imgs_dir,
               save_cp=True,
-              dir_checkpoint='checkpoints/'):
+              dir_checkpoint='checkpoints/',
+              epochs=10):
 
     train = BasicDataset(dir_img, mode='train')
     test = BasicDataset(dir_img, mode='test')
@@ -65,6 +66,7 @@ def train_net(lr=1e-3,
     meta_l = 0
     net_l = 0
     accuracy_log = []
+    for epoch in range(epochs)
     for i in tqdm(range(hyperparameters['num_iterations'])):
         net.train()
         # Line 2 get batch of data
@@ -152,9 +154,9 @@ def train_net(lr=1e-3,
 def get_args():
     parser = argparse.ArgumentParser(description='Learning to reweight on classification tasks',
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument('-e', '--epochs', metavar='E', type=int, default=5,
+    parser.add_argument('-e', '--epochs', metavar='E', type=int, default=100,
                         help='Number of epochs', dest='epochs')
-    parser.add_argument('-b', '--batch-size', metavar='B', type=int, nargs='?', default=100,
+    parser.add_argument('-b', '--batch-size', metavar='B', type=int, nargs='?', default=128,
                         help='Batch size', dest='batchsize')
     parser.add_argument('-l', '--learning-rate', metavar='LR', type=float, nargs='?', default=1e-3,
                         help='Learning rate', dest='lr')

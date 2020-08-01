@@ -29,9 +29,8 @@ class BasicDataset(Dataset):
         self.target_transform = target_transform
         self.imgs_dir = imgs_dir
         self.transform = transforms.Compose([
-               transforms.Resize([32,32]),
-               transforms.ToTensor(),
-               transforms.Normalize((0.1307,), (0.3081,))
+               transforms.Resize([128, 128]),
+               transforms.ToTensor()
             ])
         self.val_data = []
         self.val_label = []
