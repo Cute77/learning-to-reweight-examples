@@ -148,13 +148,13 @@ def get_args():
     parser.add_argument('-e', '--epochs', metavar='E', type=int, default=100,
                         help='Number of epochs', dest='epochs')
     parser.add_argument('-b', '--batch-size', metavar='B', type=int, nargs='?', default=128,
-                        help='Batch size', dest='batchsize')
+                        help='Batch size', dest='batch_size')
     parser.add_argument('-l', '--learning-rate', metavar='LR', type=float, nargs='?', default=1e-3,
                         help='Learning rate', dest='lr')
     parser.add_argument('-i', '--imgs_dir', metavar='ID', type=str, nargs='?', default='ISIC_2019_Training_Input/',
-                        help='image path', dest='id')
+                        help='image path', dest='img_dir')
     parser.add_argument('-n', '--noise_fraction', metavar='NF', type=float, nargs='?', default=0.2,
-                        help='Noise Fraction', dest='nf')
+                        help='Noise Fraction', dest='noise_fraction')
 
     return parser.parse_args()
 
