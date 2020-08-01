@@ -18,14 +18,14 @@ def to_var(x, requires_grad=True):
     return Variable(x, requires_grad=requires_grad)
 
 
-def build_model():
+def build_model(lr):
     net = torchvision.models.resnet101(pretrained=True)
 
     if torch.cuda.is_available():
         net.cuda()
         torch.backends.cudnn.benchmark = True
 
-    opt = torch.optim.SGD(net.params(),lr=hyperparameters["lr"])
+    opt = torch.optim.SGD(net.parameters(), lr)
     
     return net, opt
 
@@ -55,11 +55,11 @@ def train_net(noise_fraction,
 
     val_data, val_labels = next(iter(val_loader))
     
-    net, opt = build_model()
+    net, opt = build_model(lr)
     plot_step = 100
     accuracy_log = []
     data = iter(data_loader)
-    
+
     for epoch in range(epochs):
         net.train()
         for i in tqdm(range(len(train))):
