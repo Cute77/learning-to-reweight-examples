@@ -151,9 +151,9 @@ def get_args():
                         help='Batch size', dest='batchsize')
     parser.add_argument('-l', '--learning-rate', metavar='LR', type=float, nargs='?', default=1e-3,
                         help='Learning rate', dest='lr')
-    parser.add_argument('-l', '--imgs_dir', metavar='ID', type=str, nargs='?', default='ISIC_2019_Training_Input/',
+    parser.add_argument('-i', '--imgs_dir', metavar='ID', type=str, nargs='?', default='ISIC_2019_Training_Input/',
                         help='image path', dest='id')
-    parser.add_argument('-l', '--noise_fraction', metavar='NF', type=float, nargs='?', default=0.2,
+    parser.add_argument('-n', '--noise_fraction', metavar='NF', type=float, nargs='?', default=0.2,
                         help='Noise Fraction', dest='nf')
 
     return parser.parse_args()
