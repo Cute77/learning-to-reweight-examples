@@ -48,8 +48,8 @@ class BasicDataset(Dataset):
             data_val = self.transform(data_val)
             self.val_data.append(data_val)
 
-            self.data_val = torch.cat(self.data_val, dim=0)
-            self.labels_val = torch.cat(self.labels_val, dim=0)
+            self.val_data = torch.cat(self.val_data, dim=0)
+            self.val_label = torch.cat(self.val_label, dim=0)
 
 
     def __getitem__(self, index):
