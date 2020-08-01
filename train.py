@@ -3,12 +3,9 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.autograd import Variable
 from model import *
-from data_loader import *
-import matplotlib.pyplot as plt
 from tqdm import tqdm
 import IPython
 import gc
-import matplotlib
 import torchvision
 from datasets import BasicDataset
 from torch.utils.data import DataLoader, random_split
