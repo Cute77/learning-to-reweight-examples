@@ -77,7 +77,9 @@ def train_net(noise_fraction,
             labels = to_var(labels, requires_grad=False)
 
             # Lines 4 - 5 initial forward pass to compute the initial weighted loss
-            y_f_hat = meta_net(image)
+            with torch.no_grad():
+                y_f_hat = meta_net(image)
+            
             cost = F.binary_cross_entropy_with_logits(y_f_hat, labels, reduce=False)
             eps = to_var(torch.zeros(cost.size()))
             l_f_meta = torch.sum(cost * eps)
@@ -89,7 +91,8 @@ def train_net(noise_fraction,
             meta_net.update_params(lr, source_params=grads)
             
             # Line 8 - 10 2nd forward pass and getting the gradients with respect to epsilon
-            y_g_hat = meta_net(val_data)
+            with torch.no_grad():
+                y_g_hat = meta_net(val_data)
 
             l_g_meta = F.binary_cross_entropy_with_logits(y_g_hat, val_labels)
 
@@ -106,7 +109,8 @@ def train_net(noise_fraction,
 
             # Lines 12 - 14 computing for the loss with the computed weights
             # and then perform a parameter update
-            y_f_hat = net(image)
+            with torch.no_grad():
+                y_f_hat = net(image)
             cost = F.binary_cross_entropy_with_logits(y_f_hat, labels, reduce=False)
             l_f = torch.sum(cost * w)
 
