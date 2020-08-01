@@ -53,17 +53,18 @@ def train_net(noise_fraction,
     # data_loader = get_mnist_loader(hyperparameters['batch_size'], classes=[9, 4], proportion=0.995, mode="train")
     # test_loader = get_mnist_loader(hyperparameters['batch_size'], classes=[9, 4], proportion=0.5, mode="test")
 
-    val_data = to_var(data_loader.dataset.val_data, requires_grad=False)
-    val_labels = to_var(data_loader.dataset.val_label, requires_grad=False)
-
+    val_data, val_labels = next(iter(val_loader))
+    
     net, opt = build_model()
     plot_step = 100
     accuracy_log = []
+    data = iter(data_loader)
+    
     for epoch in range(epochs):
         net.train()
         for i in tqdm(range(len(train))):
             # Line 2 get batch of data
-            image, labels = next(iter(data_loader))
+            image, labels = next(data)
             # since validation data is small I just fixed them instead of building an iterator
             # initialize a dummy network for the meta learning of the weights
             meta_net = torchvision.models.resnet101(pretrained=True)
