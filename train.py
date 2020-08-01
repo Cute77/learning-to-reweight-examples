@@ -158,7 +158,7 @@ def get_args():
                         help='Batch size', dest='batchsize')
     parser.add_argument('-l', '--learning-rate', metavar='LR', type=float, nargs='?', default=1e-3,
                         help='Learning rate', dest='lr')
-    parser.add_argument('-l', '--imgs_dir', metavar='ID', type=str, nargs='?', default=0.1,
+    parser.add_argument('-l', '--imgs_dir', metavar='ID', type=str, nargs='?', default='ISIC_2019_Training_Input/',
                         help='Learning rate', dest='lr')
 
     return parser.parse_args()
@@ -174,7 +174,7 @@ if __name__ == '__main__':
               save_cp=True,
               dir_checkpoint='checkpoints/')
         print('Test Accuracy: ', accuracy)
-        
+
     except KeyboardInterrupt:
         torch.save(net.state_dict(), 'INTERRUPTED.pth')
         logging.info('Saved interrupt')
