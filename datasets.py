@@ -18,10 +18,14 @@ class BasicDataset(Dataset):
         if mode == 'test':
             datatxt = 'ISIC_2019_Training_GroundTruth_test.csv'
 
+        if mode == 'val':
+            datatxt = 'ISIC_2019_Training_GroundTruth_clean.csv'            
+
         # datatxt = 'ISIC_2019_Training_GroundTruth.csv'
-        clean_datatxt = 'ISIC_2019_Training_GroundTruth_clean.csv'
+        # lean_datatxt = 'ISIC_2019_Training_GroundTruth_clean.csv'
+        
+        # fc = open(clean_datatxt, 'r')
         fh = open(datatxt, 'r')
-        fc = open(clean_datatxt, 'r')
         imgs = []
         for line in fh:
             line = line.rstrip()
@@ -34,6 +38,8 @@ class BasicDataset(Dataset):
                transforms.Resize([128, 128]),
                transforms.ToTensor()
             ])
+        
+        '''
         self.val_data = []
         self.val_label = []
 
@@ -50,7 +56,7 @@ class BasicDataset(Dataset):
 
             self.val_data = torch.cat(self.val_data, dim=0)
             self.val_label = torch.cat(self.val_label, dim=0)
-
+        '''
 
     def __getitem__(self, index):
         fn, label = self.imgs[index]
@@ -59,9 +65,6 @@ class BasicDataset(Dataset):
 
         img = Image.open(self.imgs_dir+fn+'.jpg').convert('RGB')
         img = self.transform(img)
-
-        if self.transform is not None:
-            img = self.transform(img)
 
         return img, label
 
