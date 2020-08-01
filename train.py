@@ -8,7 +8,7 @@ import IPython
 import gc
 import torchvision
 from datasets import BasicDataset
-from torch.utils.data import DataLoader, random_split
+from torch.utils.data import DataLoader
 import numpy as np
 
 
@@ -152,7 +152,7 @@ def get_args():
     parser.add_argument('-l', '--learning-rate', metavar='LR', type=float, nargs='?', default=1e-3,
                         help='Learning rate', dest='lr')
     parser.add_argument('-l', '--imgs_dir', metavar='ID', type=str, nargs='?', default='ISIC_2019_Training_Input/',
-                        help='Learning rate', dest='id')
+                        help='image path', dest='id')
     parser.add_argument('-l', '--noise_fraction', metavar='NF', type=float, nargs='?', default=0.2,
                         help='Noise Fraction', dest='nf')
 
