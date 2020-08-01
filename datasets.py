@@ -35,7 +35,7 @@ class BasicDataset(Dataset):
         self.target_transform = target_transform
         self.imgs_dir = imgs_dir
         self.transform = transforms.Compose([
-               transforms.Resize([128, 128]),
+               transforms.Resize([512, 512]),
                transforms.ToTensor()
             ])
         
