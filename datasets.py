@@ -44,7 +44,7 @@ class BasicDataset(Dataset):
             label_val = np.array(label_val)
             self.val_label.append(label_val)
 
-            data_val = Image.open(self.imgs_dir+fm).convert('RGB')
+            data_val = Image.open(self.imgs_dir+fm+'.jpg').convert('RGB')
             data_val = self.transform(data_val)
             self.val_data.append(data_val)
 
@@ -55,7 +55,7 @@ class BasicDataset(Dataset):
         label = list(map(float, label))
         label = np.array(label)
 
-        img = Image.open(self.imgs_dir+fn).convert('RGB')
+        img = Image.open(self.imgs_dir+fn+'.jpg').convert('RGB')
         img = self.transform(img)
 
         if self.transform is not None:
