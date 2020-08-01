@@ -33,15 +33,15 @@ def build_model():
     return net, opt
 
 
-def train_net(lr=1e-3,
+def train_net(noise_fraction, 
+              lr=1e-3,
               momentum=0.9, 
               batch_size=128,
               num_iterations=8000, 
               dir_img='ISIC_2019_Training_Input/',
               save_cp=True,
               dir_checkpoint='checkpoints/',
-              epochs=10, 
-              noise_fraction):
+              epochs=10):
 
     train = BasicDataset(dir_img, noise_fraction, mode='train')
     test = BasicDataset(dir_img, noise_fraction, mode='test')
