@@ -8,8 +8,9 @@ import logging
 from PIL import Image
 from torchvision import transforms, datasets
 
+
 class BasicDataset(Dataset):
-    def __init__(self, imgs_dir, noise_fraction, target_transform=None, mode):
+    def __init__(self, imgs_dir, noise_fraction, mode, target_transform=None):
         if mode == 'train':
             datatxt = 'ISIC_2019_Training_GroundTruth_train_' + str(noise_fraction) + '.csv'
 
