@@ -26,7 +26,7 @@ def build_model():
 
     if torch.cuda.is_available():
         net.cuda()
-        torch.backends.cudnn.benchmark=True
+        torch.backends.cudnn.benchmark = True
 
     opt = torch.optim.SGD(net.params(),lr=hyperparameters["lr"])
     
@@ -37,13 +37,14 @@ def train_net(lr=1e-3,
               momentum=0.9, 
               batch_size=128,
               num_iterations=8000, 
-              dir_img=args.imgs_dir,
+              dir_img='ISIC_2019_Training_Input/',
               save_cp=True,
               dir_checkpoint='checkpoints/',
-              epochs=10):
+              epochs=10, 
+              noise_fraction):
 
-    train = BasicDataset(dir_img, mode='train')
-    test = BasicDataset(dir_img, mode='test')
+    train = BasicDataset(dir_img, noise_fraction, mode='train')
+    test = BasicDataset(dir_img, noise_fraction, mode='test')
     # n_test = int(len(dataset) * test_percent)
     # n_train = len(dataset) - n_val
     # train, test = random_split(dataset, [n_train, n_test])
@@ -90,7 +91,7 @@ def train_net(lr=1e-3,
             # Line 8 - 10 2nd forward pass and getting the gradients with respect to epsilon
             y_g_hat = meta_net(val_data)
 
-            l_g_meta = F.binary_cross_entropy_with_logits(y_g_hat,val_labels)
+            l_g_meta = F.binary_cross_entropy_with_logits(y_g_hat, val_labels)
 
             grad_eps = torch.autograd.grad(l_g_meta, eps, only_inputs=True)[0]
             
@@ -126,8 +127,8 @@ def train_net(lr=1e-3,
 
                     acc.append((predicted.numpy() == test_label.numpy()).float())
 
-                accuracy = torch.cat(acc,dim=0).mean()
-                accuracy_log.append(np.array([i,accuracy])[None])
+                accuracy = torch.cat(acc, dim=0).mean()
+                accuracy_log.append(np.array([i, accuracy])[None])
                 acc_log = np.concatenate(accuracy_log, axis=0)
                 
             if save_cp:
@@ -137,7 +138,7 @@ def train_net(lr=1e-3,
                 except OSError:
                     pass
                 torch.save(net.state_dict(),
-                        dir_checkpoint + f'CP_epoch{epoch + 1}.pth')
+                           dir_checkpoint + f'CP_epoch{epoch + 1}.pth')
                 logging.info(f'Checkpoint {epoch + 1} saved !')
 
         # return accuracy
@@ -154,7 +155,9 @@ def get_args():
     parser.add_argument('-l', '--learning-rate', metavar='LR', type=float, nargs='?', default=1e-3,
                         help='Learning rate', dest='lr')
     parser.add_argument('-l', '--imgs_dir', metavar='ID', type=str, nargs='?', default='ISIC_2019_Training_Input/',
-                        help='Learning rate', dest='lr')
+                        help='Learning rate', dest='id')
+    parser.add_argument('-l', '--noise_fraction', metavar='NF', type=float, nargs='?', default=0.2,
+                        help='Noise Fraction', dest='nf')
 
     return parser.parse_args()
 
@@ -162,12 +165,13 @@ if __name__ == '__main__':
     args = get_args()
     try:
         accuracy = train_net(lr=args.lr,
-              momentum=0.9, 
-              batch_size=args.batch_size,
-              num_iterations=8000, 
-              dir_img=args.imgs_dir,
-              save_cp=True,
-              dir_checkpoint='checkpoints/')
+                             momentum=0.9, 
+                             batch_size=args.batch_size,
+                             num_iterations=8000, 
+                             dir_img=args.imgs_dir,
+                             save_cp=True,
+                             dir_checkpoint='checkpoints/',
+                             noise_fraction=args.noise_fraction)
         print('Test Accuracy: ', accuracy)
 
     except KeyboardInterrupt:
