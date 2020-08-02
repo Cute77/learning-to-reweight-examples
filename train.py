@@ -78,6 +78,7 @@ def train_net(noise_fraction,
 
             # Lines 4 - 5 initial forward pass to compute the initial weighted loss
             with torch.no_grad():
+                print(image.shape)
                 y_f_hat = meta_net(image)
             
             cost = F.binary_cross_entropy_with_logits(y_f_hat, labels, reduce=False)
