@@ -19,7 +19,7 @@ def to_var(x, requires_grad=True):
 
 
 def build_model(lr):
-    net = torchvision.models.resnet101(pretrained=True)
+    net = torchvision.models.resnet101(pretrained=True, num_classes=9)
 
     if torch.cuda.is_available():
         net.cuda()
@@ -67,7 +67,7 @@ def train_net(noise_fraction,
             image, labels = next(data)
             # since validation data is small I just fixed them instead of building an iterator
             # initialize a dummy network for the meta learning of the weights
-            meta_net = torchvision.models.resnet101(pretrained=True)
+            meta_net = torchvision.models.resnet101(pretrained=True, num_classes=9)
             meta_net.load_state_dict(net.state_dict())
 
             if torch.cuda.is_available():
