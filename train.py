@@ -57,11 +57,11 @@ def train_net(noise_fraction,
     val_data, val_labels = next(iter(val_loader))
     val_data = to_var(val_data, requires_grad=False)
     val_labels = to_var(val_labels, requires_grad=False)
+    data = iter(data_loader)
     
     net, opt = build_model(lr)
     plot_step = 100
     accuracy_log = []
-    data = iter(data_loader)
 
     logging.info(f'''Starting training:
         Epochs:          {epochs}
