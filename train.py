@@ -67,7 +67,6 @@ def train_net(noise_fraction,
         Epochs:          {epochs}
         Batch size:      {batch_size}
         Learning rate:   {lr}
-        Training size:   {n_train}
         Checkpoints:     {save_cp}
         Noise fraction:  {noise_fraction}
         Image dir:       {dir_img}
