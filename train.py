@@ -91,7 +91,7 @@ def train_net(noise_fraction,
             meta_net.zero_grad()
 
             # Line 6 perform a parameter update
-            grads = torch.autograd.grad(l_f_meta, (meta_net.params()), create_graph=True)
+            grads = torch.autograd.grad(l_f_meta, (meta_net.params()), create_graph=True, allow_unused=True)
             meta_net.update_params(lr, source_params=grads)
             
             # Line 8 - 10 2nd forward pass and getting the gradients with respect to epsilon
