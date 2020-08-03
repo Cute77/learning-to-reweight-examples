@@ -38,7 +38,7 @@ def train_net(noise_fraction,
               batch_size=128,
               dir_img='ISIC_2019_Training_Input/',
               save_cp=True,
-              dir_checkpoint=dir_img+'checkpoints/',
+              dir_checkpoint='checkpoints/ISIC_2019_Training_Input/',
               epochs=10):
 
     train = BasicDataset(dir_img, noise_fraction, mode='train')
@@ -183,10 +183,12 @@ def get_args():
                         help='Batch size', dest='batch_size')
     parser.add_argument('-l', '--learning-rate', metavar='LR', type=float, nargs='?', default=1e-3,
                         help='Learning rate', dest='lr')
-    parser.add_argument('-i', '--imgs_dir', metavar='ID', type=str, nargs='?', default='ISIC_2019_Training_Input/',
+    parser.add_argument('-i', '--imgs-dir', metavar='ID', type=str, nargs='?', default='ISIC_2019_Training_Input/',
                         help='image path', dest='imgs_dir')
-    parser.add_argument('-n', '--noise_fraction', metavar='NF', type=float, nargs='?', default=0.2,
+    parser.add_argument('-n', '--noise-fraction', metavar='NF', type=float, nargs='?', default=0.2,
                         help='Noise Fraction', dest='noise_fraction')
+    parser.add_argument('-c', '--checkpoint-dir', metavar='CD', type=str, nargs='?', default='checkpoints/ISIC_2019_Training_Input/',
+                        help='checkpoint path', dest='checkpoint_dir')
 
     return parser.parse_args()
 
@@ -200,7 +202,7 @@ if __name__ == '__main__':
                              num_iterations=8000, 
                              dir_img=args.imgs_dir,
                              save_cp=True,
-                             dir_checkpoint=args.imgs_dir+'checkpoints/',
+                             dir_checkpoint=args.dir_checkpoint,
                              noise_fraction=args.noise_fraction)
         print('Test Accuracy: ', accuracy)
 
