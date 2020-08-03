@@ -10,6 +10,7 @@ import torchvision
 from datasets import BasicDataset
 from torch.utils.data import DataLoader
 import numpy as np
+import os
 
 
 def to_var(x, requires_grad=True):
