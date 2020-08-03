@@ -132,11 +132,12 @@ def train_net(noise_fraction,
 
                 acc = []
                 for test_img, test_label in enumerate(test_loader):
+                    print(type(test_img))
+                    print(type(test_label))
                     test_img = to_var(test_img, requires_grad=False)
                     test_label = to_var(test_label, requires_grad=False)
 
-                    with torch.no_grad():
-                        output = net(test_img)
+                    output = net(test_img)
                     predicted = (F.sigmoid(output) > 0.5).numpy()
 
                     acc.append((predicted.numpy() == test_label.numpy()).float())
