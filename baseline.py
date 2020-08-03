@@ -86,7 +86,7 @@ for epoch in range(args.epochs):
             net.eval()
             
             acc = []
-            for (test_img, test_label) in enumerate(test_loader):
+            for i, (test_img, test_label) in enumerate(test_loader):
                 test_img = to_var(test_img, requires_grad=False)
                 test_label = to_var(test_label, requires_grad=False)
                 
