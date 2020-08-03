@@ -188,7 +188,7 @@ def get_args():
     parser.add_argument('-n', '--noise-fraction', metavar='NF', type=float, nargs='?', default=0.2,
                         help='Noise Fraction', dest='noise_fraction')
     parser.add_argument('-c', '--checkpoint-dir', metavar='CD', type=str, nargs='?', default='checkpoints/ISIC_2019_Training_Input/',
-                        help='checkpoint path', dest='checkpoint_dir')
+                        help='checkpoint path', dest='dir_checkpoint')
 
     return parser.parse_args()
 
