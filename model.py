@@ -169,8 +169,8 @@ class MetaBatchNorm2d(MetaModule):
             self.register_buffer('bias', to_var(ignore.bias.data, requires_grad=True))
             
         if self.track_running_stats:
-            self.register_buffer('running_mean', torch.zeros(num_features))
-            self.register_buffer('running_var', torch.ones(num_features))
+            self.register_buffer('running_mean', torch.zeros(self.num_features))
+            self.register_buffer('running_var', torch.ones(self.num_features))
         else:
             self.register_parameter('running_mean', None)
             self.register_parameter('running_var', None)
