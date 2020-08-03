@@ -116,8 +116,8 @@ def train_net(noise_fraction,
 
             # Lines 12 - 14 computing for the loss with the computed weights
             # and then perform a parameter update
-            with torch.no_grad():
-                y_f_hat = net(image)
+            # with torch.no_grad():
+            y_f_hat = net(image)
 
             labels = labels.float()
             cost = F.binary_cross_entropy_with_logits(y_f_hat, labels, reduce=False)
