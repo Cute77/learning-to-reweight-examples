@@ -21,8 +21,8 @@ class MNISTImbalanced():
             self.mnist = datasets.MNIST('data',train=False, download=True)
             proportion = 0.5
             n_val = 0
-        self.transform=transforms.Compose([
-               transforms.Resize([32,32]),
+        self.transform = transforms.Compose([
+               transforms.Resize([32, 32]),
                transforms.ToTensor(),
                transforms.Normalize((0.1307,), (0.3081,))
             ])
