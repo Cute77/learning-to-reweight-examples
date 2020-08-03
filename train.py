@@ -81,6 +81,7 @@ def train_net(noise_fraction,
                 # print(image.shape)
             y_f_hat = meta_net(image)
             
+            labels = labels.float()
             cost = F.binary_cross_entropy_with_logits(y_f_hat, labels, reduce=False)
             # print('cost:', cost)
             eps = to_var(torch.zeros(cost.size()))
@@ -97,7 +98,7 @@ def train_net(noise_fraction,
             # with torch.no_grad():
             y_g_hat = meta_net(val_data)
 
-            # val_labels = val_labels.float()
+            val_labels = val_labels.float()
             l_g_meta = F.binary_cross_entropy_with_logits(y_g_hat, val_labels)
 
             grad_eps = torch.autograd.grad(l_g_meta, eps, only_inputs=True)[0]
@@ -116,7 +117,7 @@ def train_net(noise_fraction,
             with torch.no_grad():
                 y_f_hat = net(image)
 
-            # labels = labels.float()
+            labels = labels.float()
             cost = F.binary_cross_entropy_with_logits(y_f_hat, labels, reduce=False)
             l_f = torch.sum(cost * w)
 
