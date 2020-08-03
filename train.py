@@ -12,6 +12,7 @@ from torch.utils.data import DataLoader
 import numpy as np
 import os
 import argparse
+import logging
 
 def to_var(x, requires_grad=True):
     if torch.cuda.is_available():
@@ -35,10 +36,9 @@ def train_net(noise_fraction,
               lr=1e-3,
               momentum=0.9, 
               batch_size=128,
-              num_iterations=8000, 
               dir_img='ISIC_2019_Training_Input/',
               save_cp=True,
-              dir_checkpoint='checkpoints/',
+              dir_checkpoint=dir_img+'checkpoints/',
               epochs=10):
 
     train = BasicDataset(dir_img, noise_fraction, mode='train')
@@ -62,6 +62,16 @@ def train_net(noise_fraction,
     plot_step = 100
     accuracy_log = []
     data = iter(data_loader)
+
+    logging.info(f'''Starting training:
+        Epochs:          {epochs}
+        Batch size:      {batch_size}
+        Learning rate:   {lr}
+        Training size:   {n_train}
+        Checkpoints:     {save_cp}
+        Noise fraction:  {noise_fraction}
+        Image dir:       {dir_img}
+    ''')
 
     for epoch in range(epochs):
         net.train()
@@ -181,6 +191,7 @@ def get_args():
     return parser.parse_args()
 
 if __name__ == '__main__':
+    logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s')
     args = get_args()
     try:
         accuracy = train_net(lr=args.lr,
@@ -189,7 +200,7 @@ if __name__ == '__main__':
                              num_iterations=8000, 
                              dir_img=args.imgs_dir,
                              save_cp=True,
-                             dir_checkpoint='checkpoints/',
+                             dir_checkpoint=args.imgs_dir+'checkpoints/',
                              noise_fraction=args.noise_fraction)
         print('Test Accuracy: ', accuracy)
 
