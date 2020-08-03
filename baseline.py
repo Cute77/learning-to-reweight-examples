@@ -75,6 +75,7 @@ for epoch in range(args.epochs):
         labels = to_var(labels, requires_grad=False)
 
         y = net(image)
+        labels = labels.float()
         cost = F.binary_cross_entropy_with_logits(y, labels)
         
         opt.zero_grad()
@@ -92,7 +93,7 @@ for epoch in range(args.epochs):
                 output = net(test_img)
                 predicted = (F.sigmoid(output) > 0.5).int()
                 
-                acc.append((predicted.int() == test_label.int()).float())
+                acc.append((predicted.float() == test_label.float()).float())
 
             accuracy = torch.cat(acc, dim=0).mean()
             accuracy_log.append(np.array([i, accuracy])[None])
