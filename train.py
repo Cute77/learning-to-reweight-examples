@@ -83,16 +83,15 @@ def train_net(noise_fraction,
             
             labels = labels.float()
             cost = F.binary_cross_entropy_with_logits(y_f_hat, labels, reduce=False)
-            print('cost:', cost)
+            # print('cost:', cost)
             eps = to_var(torch.zeros(cost.size()))
-            print('eps: ', eps)
+            # print('eps: ', eps)
             l_f_meta = torch.sum(cost * eps)
 
             meta_net.zero_grad()
 
             # Line 6 perform a parameter update
-            grads = torch.autograd.grad(l_f_meta, (meta_net.params()), create_graph=True, allow_unused=True)
-            print(grads)
+            grads = torch.autograd.grad(l_f_meta, (meta_net.params()), create_graph=True)
             meta_net.update_params(lr, source_params=grads)
             
             # Line 8 - 10 2nd forward pass and getting the gradients with respect to epsilon
