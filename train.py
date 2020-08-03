@@ -198,8 +198,7 @@ if __name__ == '__main__':
     try:
         accuracy = train_net(lr=args.lr,
                              momentum=0.9, 
-                             batch_size=args.batch_size,
-                             num_iterations=8000, 
+                             batch_size=args.batch_size, 
                              dir_img=args.imgs_dir,
                              save_cp=True,
                              dir_checkpoint=args.dir_checkpoint,
