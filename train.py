@@ -25,7 +25,7 @@ def build_model(lr):
         net.cuda()
         torch.backends.cudnn.benchmark = True
 
-    opt = torch.optim.SGD(net.parameters(), lr)
+    opt = torch.optim.SGD(net.params(), lr)
     
     return net, opt
 
@@ -89,7 +89,7 @@ def train_net(noise_fraction,
             meta_net.zero_grad()
 
             # Line 6 perform a parameter update
-            grads = torch.autograd.grad(l_f_meta, (meta_net.parameters()), create_graph=True, allow_unused=True)
+            grads = torch.autograd.grad(l_f_meta, (meta_net.params()), create_graph=True, allow_unused=True)
             meta_net.update_params(lr, source_params=grads)
             
             # Line 8 - 10 2nd forward pass and getting the gradients with respect to epsilon
