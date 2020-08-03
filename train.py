@@ -142,7 +142,7 @@ def train_net(noise_fraction,
                     print(type(predicted))
                     test_label = test_label.float()
 
-                    print(type(predicted == test_label).float())
+                    print(type((predicted == test_label).float()))
                     acc.append((predicted == test_label).float())
 
                 accuracy = torch.cat(acc, dim=0).mean()
