@@ -26,7 +26,7 @@ def build_model(lr):
         net.cuda()
         torch.backends.cudnn.benchmark = True
 
-    opt = torch.optim.SGD(net.parameters(), lr)
+    opt = torch.optim.SGD(net.params(), lr)
     
     return net, opt
 
