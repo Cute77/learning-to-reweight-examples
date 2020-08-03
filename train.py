@@ -83,7 +83,9 @@ def train_net(noise_fraction,
             
             labels = labels.float()
             cost = F.binary_cross_entropy_with_logits(y_f_hat, labels, reduce=False)
+            print('cost:', cost)
             eps = to_var(torch.zeros(cost.size()))
+            print('eps: ', eps)
             l_f_meta = torch.sum(cost * eps)
 
             meta_net.zero_grad()
