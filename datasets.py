@@ -11,15 +11,18 @@ import argparse
 
 
 class BasicDataset(Dataset):
-    def __init__(self, imgs_dir, noise_fraction, mode, target_transform=None):
+    def __init__(self, imgs_dir, noise_fraction=None, mode='train', target_transform=None):
         if mode == 'train':
-            datatxt = 'ISIC_2019_Training_GroundTruth_train_' + str(noise_fraction) + '.csv'
+            datatxt = 'ISIC_2019_Training_GroundTruth_sub_train_' + str(noise_fraction) + '.csv'
 
         if mode == 'test':
-            datatxt = 'ISIC_2019_Training_GroundTruth_test.csv'
+            datatxt = 'ISIC_2019_Training_GroundTruth_sub_test.csv'
 
         if mode == 'val':
-            datatxt = 'ISIC_2019_Training_GroundTruth_clean.csv'            
+            datatxt = 'ISIC_2019_Training_GroundTruth_sub_clean.csv'    
+
+        if mode == 'base':
+            datatxt = 'ISIC_2019_Training_GroundTruth_sub_train.csv'        
 
         # datatxt = 'ISIC_2019_Training_GroundTruth.csv'
         # lean_datatxt = 'ISIC_2019_Training_GroundTruth_clean.csv'
