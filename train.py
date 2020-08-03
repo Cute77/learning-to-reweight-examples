@@ -137,13 +137,13 @@ def train_net(noise_fraction,
 
                     output = net(test_img)
                     predicted = (F.sigmoid(output) > 0.5)
-                    print(type(predicted))
-                    predicted = to_var(predicted, requires_grad=False)
-                    print(type(predicted))
-                    test_label = test_label.float()
+                    # print(type(predicted))
+                    # predicted = to_var(predicted, requires_grad=False)
+                    # print(type(predicted))
+                    # test_label = test_label.float()
 
-                    print(type((predicted == test_label).float()))
-                    acc.append((predicted == test_label).float())
+                    # print(type((predicted == test_label).float()))
+                    acc.append((predicted.float() == test_label.float()).float())
 
                 accuracy = torch.cat(acc, dim=0).mean()
                 accuracy_log.append(np.array([i, accuracy])[None])
