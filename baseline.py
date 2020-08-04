@@ -69,7 +69,7 @@ data = iter(data_loader)
 for epoch in range(args.epochs):
     for i in tqdm(range(len(train))):
         net.train()
-        image, labels = next(iter(data_loader))
+        image, labels = next(data)
 
         image = to_var(image, requires_grad=False)
         labels = to_var(labels, requires_grad=False)
