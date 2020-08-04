@@ -11,6 +11,7 @@ from datasets import BasicDataset
 from torch.utils.data import DataLoader
 import numpy as np
 import argparse
+from data_loader import *
 
 
 def to_var(x, requires_grad=True):
@@ -58,11 +59,14 @@ net_l = 0
 smoothing_alpha = 0.9
 accuracy_log = []
 
-train = BasicDataset(imgs_dir=args.imgs_dir, mode='base')
-test = BasicDataset(imgs_dir=args.imgs_dir, mode='test')
+data_loader = get_mnist_loader(hyperparameters['batch_size'], classes=[9, 4], proportion=0.995, mode="train")
+test_loader = get_mnist_loader(hyperparameters['batch_size'], classes=[9, 4], proportion=0.5, mode="test")
 
-data_loader = DataLoader(train, batch_size=args.batch_size, shuffle=True, num_workers=8, pin_memory=True)
-test_loader = DataLoader(test, batch_size=args.batch_size, shuffle=False, num_workers=8, pin_memory=True)
+# train = BasicDataset(imgs_dir=args.imgs_dir, mode='base')
+# test = BasicDataset(imgs_dir=args.imgs_dir, mode='test')
+
+# data_loader = DataLoader(train, batch_size=args.batch_size, shuffle=True, num_workers=8, pin_memory=True)
+# test_loader = DataLoader(test, batch_size=args.batch_size, shuffle=False, num_workers=8, pin_memory=True)
 
 data = iter(data_loader)
 
