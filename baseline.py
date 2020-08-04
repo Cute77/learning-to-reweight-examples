@@ -21,8 +21,8 @@ def to_var(x, requires_grad=True):
 
 
 def build_model(lr):
-    # net = model.resnet101(pretrained=False, num_classes=9)
-    net = model.LeNet(n_out=1)
+    net = model.resnet101(pretrained=False, num_classes=9)
+    # net = model.LeNet(n_out=1)
 
     if torch.cuda.is_available():
         net.cuda()
@@ -60,20 +60,20 @@ net_l = 0
 smoothing_alpha = 0.9
 accuracy_log = []
 
-data_loader = dl.get_mnist_loader(args.batch_size, classes=[9, 4], proportion=0.995, mode="train")
-test_loader = dl.get_mnist_loader(args.batch_size, classes=[9, 4], proportion=0.5, mode="test")
+# data_loader = dl.get_mnist_loader(args.batch_size, classes=[9, 4], proportion=0.995, mode="train")
+# test_loader = dl.get_mnist_loader(args.batch_size, classes=[9, 4], proportion=0.5, mode="test")
 
-# train = BasicDataset(imgs_dir=args.imgs_dir, mode='base')
-# test = BasicDataset(imgs_dir=args.imgs_dir, mode='test')
+train = BasicDataset(imgs_dir=args.imgs_dir, mode='base')
+test = BasicDataset(imgs_dir=args.imgs_dir, mode='test')
 
-# data_loader = DataLoader(train, batch_size=args.batch_size, shuffle=True, num_workers=8, pin_memory=True)
-# test_loader = DataLoader(test, batch_size=args.batch_size, shuffle=False, num_workers=8, pin_memory=True)
+data_loader = DataLoader(train, batch_size=args.batch_size, shuffle=True, num_workers=4, pin_memory=True)
+test_loader = DataLoader(test, batch_size=args.batch_size, shuffle=False, num_workers=4, pin_memory=True)
 
 data = iter(data_loader)
 
 for epoch in range(args.epochs):
-    # for i in tqdm(range(len(train))):
-    for i in range(8000):
+    for i in tqdm(range(len(train))):
+    # for i in range(8000):
         net.train()
         image, labels = next(data)
 
