@@ -75,7 +75,9 @@ for epoch in range(args.epochs):
     for i in tqdm(range(len(train))):
     # for i in range(8000):
         net.train()
-        image, labels = next(data)
+        # image, labels = next(data)
+        image, labels = next(iter(data_loader))
+
 
         image = to_var(image, requires_grad=False)
         labels = to_var(labels, requires_grad=False)
