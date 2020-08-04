@@ -11,7 +11,7 @@ from datasets import BasicDataset
 from torch.utils.data import DataLoader
 import numpy as np
 import argparse
-from data_loader import *
+import data_loader as dl
 
 
 def to_var(x, requires_grad=True):
@@ -59,8 +59,8 @@ net_l = 0
 smoothing_alpha = 0.9
 accuracy_log = []
 
-data_loader = get_mnist_loader(hyperparameters['batch_size'], classes=[9, 4], proportion=0.995, mode="train")
-test_loader = get_mnist_loader(hyperparameters['batch_size'], classes=[9, 4], proportion=0.5, mode="test")
+data_loader = dl.get_mnist_loader(args.batch_size, classes=[9, 4], proportion=0.995, mode="train")
+test_loader = dl.get_mnist_loader(args.batch_size, classes=[9, 4], proportion=0.5, mode="test")
 
 # train = BasicDataset(imgs_dir=args.imgs_dir, mode='base')
 # test = BasicDataset(imgs_dir=args.imgs_dir, mode='test')
@@ -71,7 +71,8 @@ test_loader = get_mnist_loader(hyperparameters['batch_size'], classes=[9, 4], pr
 data = iter(data_loader)
 
 for epoch in range(args.epochs):
-    for i in tqdm(range(len(train))):
+    # for i in tqdm(range(len(train))):
+    for i in range(8000):
         net.train()
         image, labels = next(data)
 
