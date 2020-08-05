@@ -74,12 +74,12 @@ def train_net(noise_fraction,
     ''')
 
     for epoch in range(epochs):
-        net.train()
-        for i in tqdm(range(int(len(train)/batch_size))):
+        for i in tqdm(range(len(train))):
+            net.train()
             # Line 2 get batch of data
             image, labels = next(data)
             try:
-            image, labels = next(data)
+                image, labels = next(data)
             except StopIteration:
                 data = iter(data_loader)
                 image, labels = next(data)
