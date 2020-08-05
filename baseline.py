@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+import troch.nn as nn
 from torch.autograd import Variable
 import model
 from tqdm import tqdm
@@ -88,7 +89,8 @@ for epoch in range(args.epochs):
 
         y = net(image)
         labels = labels.float()
-        cost = F.binary_cross_entropy_with_logits(y, labels)
+        loss = nn.CrossEntropyLoss()
+        cost = loss(y, labels)
         
         opt.zero_grad()
         cost.backward()
