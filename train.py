@@ -77,7 +77,6 @@ def train_net(noise_fraction,
         for i in tqdm(range(len(train))):
             net.train()
             # Line 2 get batch of data
-            image, labels = next(data)
             try:
                 image, labels = next(data)
             except StopIteration:
