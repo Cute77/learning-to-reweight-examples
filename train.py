@@ -57,6 +57,7 @@ def train_net(noise_fraction,
     val_data, val_labels = next(iter(val_loader))
     val_data = to_var(val_data, requires_grad=False)
     val_labels = to_var(val_labels, requires_grad=False)
+
     data = iter(data_loader)
     
     net, opt = build_model(lr)
@@ -109,9 +110,6 @@ def train_net(noise_fraction,
             
             # Line 8 - 10 2nd forward pass and getting the gradients with respect to epsilon
             # with torch.no_grad():
-            val_data, val_labels = next(iter(val_loader))
-            val_data = to_var(val_data, requires_grad=False)
-            val_labels = to_var(val_labels, requires_grad=False)
             y_g_hat = meta_net(val_data)
 
             val_labels = val_labels.float()
