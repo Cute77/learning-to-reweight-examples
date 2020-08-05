@@ -100,6 +100,7 @@ def train_net(noise_fraction,
             y_f_hat = meta_net(image)
             
             labels = labels.float()
+            # loss = nn.MultiLabelSoftMarginLoss()
             loss = nn.CrossEntropyLoss()
             cost = loss(y_f_hat, labels)
             # cost = F.binary_cross_entropy_with_logits(y_f_hat, labels, reduce=False)
