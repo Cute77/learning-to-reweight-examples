@@ -90,7 +90,7 @@ for epoch in range(args.epochs):
         y = net(image)
         labels = labels.float()
         loss = nn.CrossEntropyLoss()
-        cost = loss(y, labels)
+        cost = loss(y.long(), labels.long())
         
         opt.zero_grad()
         cost.backward()
