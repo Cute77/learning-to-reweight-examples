@@ -208,7 +208,8 @@ if __name__ == '__main__':
                              dir_img=args.imgs_dir,
                              save_cp=True,
                              dir_checkpoint=args.dir_checkpoint,
-                             noise_fraction=args.noise_fraction)
+                             noise_fraction=args.noise_fraction,
+                             epochs=args.epochs)
         print('Test Accuracy: ', accuracy)
 
     except KeyboardInterrupt:
