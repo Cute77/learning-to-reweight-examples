@@ -78,6 +78,11 @@ def train_net(noise_fraction,
         for i in tqdm(range(int(len(train)/batch_size))):
             # Line 2 get batch of data
             image, labels = next(data)
+            try:
+            image, labels = next(data)
+            except StopIteration:
+                data = iter(data_loader)
+                image, labels = next(data)
             # image, labels = next(iter(data_loader))
             # since validation data is small I just fixed them instead of building an iterator
             # initialize a dummy network for the meta learning of the weights
