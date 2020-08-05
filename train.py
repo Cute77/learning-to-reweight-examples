@@ -74,10 +74,10 @@ def train_net(noise_fraction,
 
     for epoch in range(epochs):
         net.train()
-        for i in tqdm(range(len(train))):
+        for i in tqdm(range(len(train/batch_size))):
             # Line 2 get batch of data
-            # image, labels = next(data)
-            image, labels = next(iter(data_loader))
+            image, labels = next(data)
+            # image, labels = next(iter(data_loader))
             # since validation data is small I just fixed them instead of building an iterator
             # initialize a dummy network for the meta learning of the weights
             meta_net = model.resnet101(pretrained=False, num_classes=9)
@@ -109,6 +109,9 @@ def train_net(noise_fraction,
             
             # Line 8 - 10 2nd forward pass and getting the gradients with respect to epsilon
             # with torch.no_grad():
+            val_data, val_labels = next(iter(val_loader))
+            val_data = to_var(val_data, requires_grad=False)
+            val_labels = to_var(val_labels, requires_grad=False)
             y_g_hat = meta_net(val_data)
 
             val_labels = val_labels.float()

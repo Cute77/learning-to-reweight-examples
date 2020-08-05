@@ -72,11 +72,11 @@ test_loader = DataLoader(test, batch_size=args.batch_size, shuffle=False, num_wo
 data = iter(data_loader)
 
 for epoch in range(args.epochs):
-    for i in tqdm(range(len(train))):
+    for i in tqdm(range(len(train/args.batch_size))):
     # for i in range(8000):
         net.train()
-        # image, labels = next(data)
-        image, labels = next(iter(data_loader))
+        image, labels = next(data)
+        # image, labels = next(iter(data_loader))
 
 
         image = to_var(image, requires_grad=False)
