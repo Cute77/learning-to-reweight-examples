@@ -175,7 +175,7 @@ def train_net(noise_fraction,
                     pass
                 torch.save(net.state_dict(),
                            dir_checkpoint + f'CP_epoch{epoch + 1}.pth')
-                logging.info(f'Checkpoint {epoch + 1} saved !')
+                # logging.info(f'Checkpoint {epoch + 1} saved !')
 
         # return accuracy
     return np.mean(acc_log[-6:-1, 1])
