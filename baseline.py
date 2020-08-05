@@ -91,7 +91,7 @@ for epoch in range(args.epochs):
         labels = labels.float()
         # loss = nn.CrossEntropyLoss()
         loss = nn.MultiLabelSoftMarginLoss()
-        cost = loss(y.long(), labels.long())
+        cost = loss(y, labels)
         
         opt.zero_grad()
         cost.backward()
