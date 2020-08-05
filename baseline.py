@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-import troch.nn as nn
+import torch.nn as nn
 from torch.autograd import Variable
 import model
 from tqdm import tqdm
