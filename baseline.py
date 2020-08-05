@@ -101,7 +101,8 @@ for epoch in range(args.epochs):
                 test_img = to_var(test_img, requires_grad=False)
                 test_label = to_var(test_label, requires_grad=False)
                 
-                output = net(test_img)
+                with torch.no_grad():
+                    output = net(test_img)
                 predicted = (F.sigmoid(output) > 0.5).int()
                 
                 acc.append((predicted.float() == test_label.float()).float())

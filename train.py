@@ -152,7 +152,8 @@ def train_net(noise_fraction,
                     test_img = to_var(test_img, requires_grad=False)
                     test_label = to_var(test_label, requires_grad=False)
 
-                    output = net(test_img)
+                    with torch.no_grad():
+                        output = net(test_img)
                     predicted = (F.sigmoid(output) > 0.5)
                     # print(type(predicted))
                     # predicted = to_var(predicted, requires_grad=False)
