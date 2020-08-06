@@ -92,7 +92,7 @@ for epoch in range(args.epochs):
         labels = to_var(labels, requires_grad=False)
 
         y = net(image)
-        cost = loss(y.int(), labels.int())
+        cost = loss(y, labels)
         epoch_loss = epoch_loss + cost.item()
         
         opt.zero_grad()
