@@ -106,6 +106,7 @@ for epoch in range(args.epochs):
             for i, (test_img, test_label) in enumerate(test_loader):
                 test_img = to_var(test_img, requires_grad=False)
                 test_label = to_var(test_label, requires_grad=False)
+                print(test_label)
                 print(test_label.size())
                 with torch.no_grad():
                     output = net(test_img)
