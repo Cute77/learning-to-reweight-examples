@@ -72,8 +72,12 @@ data_loader = DataLoader(train, batch_size=args.batch_size, shuffle=True, num_wo
 test_loader = DataLoader(test, batch_size=args.batch_size, shuffle=False, num_workers=4, pin_memory=True)
 
 data = iter(data_loader)
+loss = nn.CrossEntropyLoss()
+# loss = nn.MultiLabelSoftMarginLoss()
 
 for epoch in range(args.epochs):
+    epoch_loss = 0
+
     for i in tqdm(range(len(train))):
     # for i in range(8000):
         net.train()
@@ -88,10 +92,8 @@ for epoch in range(args.epochs):
         labels = to_var(labels, requires_grad=False)
 
         y = net(image)
-        labels = labels.float()
-        # loss = nn.CrossEntropyLoss()
-        loss = nn.MultiLabelSoftMarginLoss()
-        cost = loss(y, labels)
+        cost = loss(y.int(), labels.int())
+        epoch_loss = epoch_loss + cost.item()
         
         opt.zero_grad()
         cost.backward()
@@ -109,10 +111,14 @@ for epoch in range(args.epochs):
                     output = net(test_img)
                 predicted = (F.sigmoid(output) > 0.5).int()
                 
-                acc.append((predicted.float() == test_label.float()).float())
+                acc.append((predicted.int() == test_label.int()).float())
 
             accuracy = torch.cat(acc, dim=0).mean()
             accuracy_log.append(np.array([i, accuracy])[None])
             acc_log = np.concatenate(accuracy_log, axis=0)
+    
+    print('epoch loss: ', epoch_loss/len(train))
+    path = 'baseline/model.pth'
+    torch.save(net.state_dict(), path)
 
 print(np.mean(acc_log[-6:-1, 1]))

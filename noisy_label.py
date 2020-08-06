@@ -1,8 +1,8 @@
 import random
 
 # path = 'ISIC_2019_Training_GroundTruth_train_0.2.csv'
-path = 'ISIC_2019_Training_GroundTruth_sub_train_0.2.csv'
-noise_fraction = 1.0
+path = 'ISIC_2019_Training_GroundTruth_sub_try.csv'
+noise_fraction = 0.8
 
 fn = open(path, 'r+')
 data = []
@@ -58,7 +58,7 @@ for index in range(offset):
 for index in range(offset, len(data)):
     datas.append(data[index])
 
-random.shuffle(data)
+# random.shuffle(datas)
 
 pathtwo = 'ISIC_2019_Training_GroundTruth_sub_train_check' + str(noise_fraction) + '.csv'
 ftwo = open(pathtwo, 'w')

@@ -62,9 +62,8 @@ class BasicDataset(Dataset):
         '''
 
     def __getitem__(self, index):
-        fn, label = self.imgs[index]
-        label = list(map(float, label))
-        label = np.array(label)
+        fn, labels = self.imgs[index]
+        label = labels.index('1.0').int()
 
         img = Image.open(self.imgs_dir+fn+'.jpg').convert('RGB')
         img = self.transform(img)
