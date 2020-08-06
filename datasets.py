@@ -63,7 +63,7 @@ class BasicDataset(Dataset):
 
     def __getitem__(self, index):
         fn, labels = self.imgs[index]
-        label = labels.index('1.0').int()
+        label = labels.index('1.0')
 
         img = Image.open(self.imgs_dir+fn+'.jpg').convert('RGB')
         img = self.transform(img)
