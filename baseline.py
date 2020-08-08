@@ -80,6 +80,8 @@ correct_num = 0
 
 for epoch in range(args.epochs):
     epoch_loss = 0
+    correct_y = 0
+    num_y = 0
 
     for i in tqdm(range(len(train))):
     # for i in range(8000):
@@ -97,7 +99,10 @@ for epoch in range(args.epochs):
         y = net(image)
         cost = loss(y, labels)
         epoch_loss = epoch_loss + cost.item()
-        
+        _, y_predicted = torch.max(y, 1)
+        correct_y = correct_y + (y_predicted.int() == labels.int()).sum().item()
+        num_y = num_y + labels.size(0)
+
         opt.zero_grad()
         cost.backward()
         opt.step()
@@ -123,6 +128,7 @@ for epoch in range(args.epochs):
             acc_log = np.concatenate(accuracy_log, axis=0)
     
     print('epoch loss: ', epoch_loss/len(train))
+    print('epoch accuracy: ', correct_y/num_y)
     path = 'baseline/model.pth'
     torch.save(net.state_dict(), path)
 
