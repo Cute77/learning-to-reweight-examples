@@ -33,6 +33,7 @@ def build_model(lr):
 
 
 def train_net(noise_fraction, 
+              model_path,
               lr=1e-3,
               momentum=0.9, 
               batch_size=128,
@@ -59,7 +60,11 @@ def train_net(noise_fraction,
     val_labels = to_var(val_labels, requires_grad=False)
 
     data = iter(data_loader)
-    
+    loss = nn.CrossEntropyLoss()
+
+    test_num = 0
+    correct_num = 0
+
     net, opt = build_model(lr)
     plot_step = 100
     accuracy_log = []
@@ -71,9 +76,13 @@ def train_net(noise_fraction,
         Checkpoints:     {save_cp}
         Noise fraction:  {noise_fraction}
         Image dir:       {dir_img}
+        Model dir:       {model_path}
     ''')
 
     for epoch in range(epochs):
+        epoch_loss = 0
+        correct_y = 0
+        num_y = 0
         for i in tqdm(range(len(train))):
             net.train()
             # Line 2 get batch of data
@@ -99,9 +108,7 @@ def train_net(noise_fraction,
                 # print(image.shape)
             y_f_hat = meta_net(image)
             
-            labels = labels.float()
             # loss = nn.MultiLabelSoftMarginLoss()
-            loss = nn.CrossEntropyLoss()
             cost = loss(y_f_hat, labels)
             # cost = F.binary_cross_entropy_with_logits(y_f_hat, labels, reduce=False)
             # print('cost:', cost)
@@ -117,9 +124,8 @@ def train_net(noise_fraction,
             
             # Line 8 - 10 2nd forward pass and getting the gradients with respect to epsilon
             # with torch.no_grad():
-            y_g_hat = meta_net(val_data)
 
-            val_labels = val_labels.float()
+            y_g_hat = meta_net(val_data)
             #loss = nn.CrossEntropyLoss()
             l_g_meta = loss(y_g_hat, val_labels)
             # l_g_meta = F.binary_cross_entropy_with_logits(y_g_hat, val_labels)
@@ -139,11 +145,15 @@ def train_net(noise_fraction,
             # and then perform a parameter update
             # with torch.no_grad():
             y_f_hat = net(image)
-
-            labels = labels.float()
+            _, y_predicted = torch.max(y_f_hat, 1)
+            correct_y = correct_y + (y_predicted.int() == labels.int()).sum().item()
+            num_y = num_y + labels.size(0) 
+            
             cost = loss(y_f_hat, labels)
+
             # cost = F.binary_cross_entropy_with_logits(y_f_hat, labels, reduce=False)
             l_f = torch.sum(cost * w)
+            epoch_loss = epoch_loss + l_f.item()
 
             opt.zero_grad()
             l_f.backward()
@@ -159,14 +169,16 @@ def train_net(noise_fraction,
 
                     with torch.no_grad():
                         output = net(test_img)
-                    predicted = (F.sigmoid(output) > 0.5)
+                    _, predicted = torch.max(output, 1)
                     # print(type(predicted))
                     # predicted = to_var(predicted, requires_grad=False)
                     # print(type(predicted))
                     # test_label = test_label.float()
 
                     # print(type((predicted == test_label).float()))
-                    acc.append((predicted.float() == test_label.float()).float())
+                    test_num = test_num + test_label.size(0)
+                    correct_num = correct_num + (predicted.int() == test_label.int()).sum().item()
+                    acc.append((predicted.int() == test_label.int()).float())
 
                 accuracy = torch.cat(acc, dim=0).mean()
                 accuracy_log.append(np.array([i, accuracy])[None])
@@ -182,8 +194,14 @@ def train_net(noise_fraction,
                            dir_checkpoint + f'CP_epoch{epoch + 1}.pth')
                 # logging.info(f'Checkpoint {epoch + 1} saved !')
 
+        print('epoch loss: ', epoch_loss/len(train))
+        print('epoch accuracy: ', correct_y/num_y)
+        path = model_path + 'model.pth'
+        torch.save(net.state_dict(), path)
+        print('test accuracy: ', np.mean(acc_log[-6:-1, 1]))
+        print('test accuracy: ', correct_num/test_num)
         # return accuracy
-    return np.mean(acc_log[-6:-1, 1])
+    return net, np.mean(acc_log[-6:-1, 1])
 
 
 def get_args():
@@ -201,6 +219,8 @@ def get_args():
                         help='Noise Fraction', dest='noise_fraction')
     parser.add_argument('-c', '--checkpoint-dir', metavar='CD', type=str, nargs='?', default='checkpoints/ISIC_2019_Training_Input/',
                         help='checkpoint path', dest='dir_checkpoint')
+    parser.add_argument('-m', '--model-dir', metavar='MD', type=str, nargs='?', default='0.2/1/',
+                        help='model path', dest='dir_model')
 
     return parser.parse_args()
 
@@ -208,7 +228,8 @@ if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s')
     args = get_args()
     try:
-        accuracy = train_net(lr=args.lr,
+        net, accuracy = train_net(lr=args.lr,
+                             model_path=args.dir_model,
                              momentum=0.9, 
                              batch_size=args.batch_size, 
                              dir_img=args.imgs_dir,
