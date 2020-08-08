@@ -65,7 +65,7 @@ accuracy_log = []
 # test_loader = dl.get_mnist_loader(args.batch_size, classes=[9, 4], proportion=0.5, mode="test")
 
 # train = BasicDataset(imgs_dir=args.imgs_dir, mode='base')
-train = BasicDataset(imgs_dir=args.imgs_dir, noise_fraction=0.4, mode='train')
+train = BasicDataset(imgs_dir=args.imgs_dir, noise_fraction=0.8, mode='train')
 test = BasicDataset(imgs_dir=args.imgs_dir, mode='test')
 
 data_loader = DataLoader(train, batch_size=args.batch_size, shuffle=True, num_workers=4, pin_memory=True)
