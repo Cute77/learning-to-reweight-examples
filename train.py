@@ -62,8 +62,6 @@ def train_net(noise_fraction,
     data = iter(data_loader)
     loss = nn.CrossEntropyLoss()
 
-    test_num = 0
-    correct_num = 0
 
     net, opt = build_model(lr)
     plot_step = 100
@@ -83,6 +81,8 @@ def train_net(noise_fraction,
         epoch_loss = 0
         correct_y = 0
         num_y = 0
+        test_num = 0
+        correct_num = 0
         for i in tqdm(range(len(train))):
             net.train()
             # Line 2 get batch of data

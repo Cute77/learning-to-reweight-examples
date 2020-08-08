@@ -82,6 +82,8 @@ for epoch in range(args.epochs):
     epoch_loss = 0
     correct_y = 0
     num_y = 0
+    test_num = 0
+    correct_num = 0
 
     for i in tqdm(range(len(train))):
     # for i in range(8000):
