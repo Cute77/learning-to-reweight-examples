@@ -129,7 +129,7 @@ for epoch in range(args.epochs):
     
     print('epoch loss: ', epoch_loss/len(train))
     print('epoch accuracy: ', correct_y/num_y)
-    path = 'baseline/0.4/model.pth'
+    path = 'baseline/0.2/model.pth'
     torch.save(net.state_dict(), path)
     print('test accuracy: ', np.mean(acc_log[-6:-1, 1]))
     print('test accuracy: ', correct_num/test_num)
