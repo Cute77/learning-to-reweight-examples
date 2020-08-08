@@ -113,7 +113,6 @@ for epoch in range(args.epochs):
                 with torch.no_grad():
                     output = net(test_img)
                 _, predicted = torch.max(output, 1)
-                print(predicted.size())
                 
                 test_num = test_num + test_label.size(0)
                 correct_num = correct_num + (predicted.int() == test_label.int()).sum().item()
