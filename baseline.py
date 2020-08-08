@@ -75,6 +75,9 @@ data = iter(data_loader)
 loss = nn.CrossEntropyLoss()
 # loss = nn.MultiLabelSoftMarginLoss()
 
+test_num = 0
+correct_num = 0
+
 for epoch in range(args.epochs):
     epoch_loss = 0
 
@@ -106,13 +109,14 @@ for epoch in range(args.epochs):
             for i, (test_img, test_label) in enumerate(test_loader):
                 test_img = to_var(test_img, requires_grad=False)
                 test_label = to_var(test_label, requires_grad=False)
-                print(test_label)
-                print(test_label.size())
+
                 with torch.no_grad():
                     output = net(test_img)
-                predicted = (F.sigmoid(output) > 0.5).int()
+                _, predicted = torch.max(output, 1)
                 print(predicted.size())
                 
+                test_num = test_num + test_label.size(0)
+                correct_num = correct_num + (predicted.int() == test_label.int()).sum().item()
                 acc.append((predicted.int() == test_label.int()).float())
 
             accuracy = torch.cat(acc, dim=0).mean()
@@ -124,3 +128,4 @@ for epoch in range(args.epochs):
     torch.save(net.state_dict(), path)
 
 print(np.mean(acc_log[-6:-1, 1]))
+print('Accuracy: ', correct_num/test_num)
