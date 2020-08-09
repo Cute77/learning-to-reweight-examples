@@ -194,6 +194,7 @@ def train_net(noise_fraction,
                            dir_checkpoint + f'CP_epoch{epoch + 1}.pth')
                 # logging.info(f'Checkpoint {epoch + 1} saved !')
 
+        print('epoch ', epoch)
         print('epoch loss: ', epoch_loss/len(train))
         print('epoch accuracy: ', correct_y/num_y)
         path = model_path + 'model.pth'

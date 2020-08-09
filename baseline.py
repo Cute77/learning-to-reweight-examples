@@ -130,6 +130,7 @@ for epoch in range(args.epochs):
             accuracy_log.append(np.array([i, accuracy])[None])
             acc_log = np.concatenate(accuracy_log, axis=0)
     
+    print('epoch ', epoch)
     print('epoch loss: ', epoch_loss/len(train))
     print('epoch accuracy: ', correct_y/num_y)
     path = 'baseline/' + str(args.noise_fraction) + '/model.pth'
