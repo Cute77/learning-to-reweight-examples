@@ -64,9 +64,9 @@ accuracy_log = []
 # data_loader = dl.get_mnist_loader(args.batch_size, classes=[9, 4], proportion=0.995, mode="train")
 # test_loader = dl.get_mnist_loader(args.batch_size, classes=[9, 4], proportion=0.5, mode="test")
 
+
+ train = BasicDataset(imgs_dir=args.imgs_dir, noise_fraction=args.noise_fraction, mode='train')
 # train = BasicDataset(imgs_dir=args.imgs_dir, mode='base')
-# train = BasicDataset(imgs_dir=args.imgs_dir, noise_fraction=args.noise_fraction, mode='train')
-train = BasicDataset(imgs_dir=args.imgs_dir, mode='base')
 test = BasicDataset(imgs_dir=args.imgs_dir, mode='test')
 
 data_loader = DataLoader(train, batch_size=args.batch_size, shuffle=True, num_workers=4, pin_memory=True)
@@ -132,8 +132,8 @@ for epoch in range(args.epochs):
     
     print('epoch loss: ', epoch_loss/len(train))
     print('epoch accuracy: ', correct_y/num_y)
-    # path = 'baseline/' + str(args.noise_fraction) + '/model.pth'
     path = 'baseline/' + str(args.noise_fraction) + '/model.pth'
+    # path = 'baseline/' + str(args.noise_fraction) + '/model.pth'
     torch.save(net.state_dict(), path)
     print('test accuracy: ', np.mean(acc_log[-6:-1, 1]))
     print('test accuracy: ', correct_num/test_num)
