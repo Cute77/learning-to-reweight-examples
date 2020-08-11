@@ -22,7 +22,7 @@ class BasicDataset(Dataset):
             datatxt = 'ISIC_2019_Training_GroundTruth_sub_clean.csv'    
 
         if mode == 'base':
-            datatxt = 'ISIC_2019_Training_GroundTruth_train.csv'        
+            datatxt = 'ISIC_2019_Training_GroundTruth_sub_train.csv'        
 
         # datatxt = 'ISIC_2019_Training_GroundTruth.csv'
         # lean_datatxt = 'ISIC_2019_Training_GroundTruth_clean.csv'
