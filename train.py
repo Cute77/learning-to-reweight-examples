@@ -51,14 +51,14 @@ def build_model(lr):
 
 def train_net(noise_fraction, 
               model_path,
+              local_rank,
               lr=1e-3,
               momentum=0.9, 
               batch_size=128,
               dir_img='ISIC_2019_Training_Input/',
               save_cp=True,
               dir_checkpoint='checkpoints/ISIC_2019_Training_Input/',
-              epochs=10, 
-              local_rank):
+              epochs=10):
 
     train = BasicDataset(dir_img, noise_fraction, mode='train')
     test = BasicDataset(dir_img, noise_fraction, mode='test')
@@ -229,7 +229,7 @@ def train_net(noise_fraction,
         print('epoch ', epoch)
         print('epoch loss: ', epoch_loss/len(train))
         print('epoch accuracy: ', correct_y/num_y)
-        
+
         path = model_path + 'model.pth'
         if local_rank == 0:
             torch.save(net.state_dict(), path)    
@@ -261,6 +261,7 @@ def get_args():
                         help='from torch.distributed.launch', dest='local_rank')
 
     return parser.parse_args()
+
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s')
