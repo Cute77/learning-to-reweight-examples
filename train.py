@@ -30,6 +30,7 @@ def synchronize():
         return
     dist.barrier()
 
+
 def to_var(x, requires_grad=True):
     if torch.cuda.is_available():
         x = x.cuda()
@@ -56,7 +57,8 @@ def train_net(noise_fraction,
               dir_img='ISIC_2019_Training_Input/',
               save_cp=True,
               dir_checkpoint='checkpoints/ISIC_2019_Training_Input/',
-              epochs=10):
+              epochs=10, 
+              local_rank):
 
     train = BasicDataset(dir_img, noise_fraction, mode='train')
     test = BasicDataset(dir_img, noise_fraction, mode='test')
@@ -83,27 +85,29 @@ def train_net(noise_fraction,
     is_distributed = num_gpus > 1
 
     if is_distributed:
-        torch.cuda.set_device(args.local_rank)  
+        torch.cuda.set_device(local_rank)  
         torch.distributed.init_process_group(
             backend="nccl", init_method="env://"
         )
         synchronize()
         net = torch.nn.parallel.DistributedDataParallel(
-            net, device_ids=[args.local_rank], output_device=args.local_rank,
+            net, device_ids=[local_rank], output_device=args.local_rank,
         )
     
     plot_step = 100
     accuracy_log = []
 
-    logging.info(f'''Starting training:
-        Epochs:          {epochs}
-        Batch size:      {batch_size}
-        Learning rate:   {lr}
-        Checkpoints:     {save_cp}
-        Noise fraction:  {noise_fraction}
-        Image dir:       {dir_img}
-        Model dir:       {model_path}
-    ''')
+    if local_rank == 0:
+        logging.info(f'''Starting training:
+            Epochs:          {epochs}
+            Batch size:      {batch_size}
+            Learning rate:   {lr}
+            Checkpoints:     {save_cp}
+            Noise fraction:  {noise_fraction}
+            Image dir:       {dir_img}
+            Model dir:       {model_path}
+        ''')
+
 
     for epoch in range(epochs):
         epoch_loss = 0
@@ -225,8 +229,11 @@ def train_net(noise_fraction,
         print('epoch ', epoch)
         print('epoch loss: ', epoch_loss/len(train))
         print('epoch accuracy: ', correct_y/num_y)
+        
         path = model_path + 'model.pth'
-        torch.save(net.state_dict(), path)
+        if local_rank == 0:
+            torch.save(net.state_dict(), path)    
+
         print('test accuracy: ', np.mean(acc_log[-6:-1, 1]))
         print('test accuracy: ', correct_num/test_num)
         # return accuracy
@@ -260,14 +267,15 @@ if __name__ == '__main__':
     args = get_args()
     try:
         net, accuracy = train_net(lr=args.lr,
-                             model_path=args.dir_model,
-                             momentum=0.9, 
-                             batch_size=args.batch_size, 
-                             dir_img=args.imgs_dir,
-                             save_cp=True,
-                             dir_checkpoint=args.dir_checkpoint,
-                             noise_fraction=args.noise_fraction,
-                             epochs=args.epochs)
+                                  model_path=args.dir_model,
+                                  momentum=0.9, 
+                                  batch_size=args.batch_size, 
+                                  dir_img=args.imgs_dir,
+                                  save_cp=True,
+                                  dir_checkpoint=args.dir_checkpoint,
+                                  noise_fraction=args.noise_fraction,
+                                  epochs=args.epochs,
+                                  local_rank=args.local_rank)
         print('Test Accuracy: ', accuracy)
 
     except KeyboardInterrupt:
