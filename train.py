@@ -71,7 +71,7 @@ def train_net(noise_fraction,
     test_sampler = torch.utils.data.distributed.DistributedSampler(test)
     val_sampler = torch.utils.data.distributed.DistributedSampler(val)
 
-    data_loader = DataLoader(train, batch_size=batch_size, shuffle=True, num_workers=8, pin_memory=True, sampler=train_sampler)
+    data_loader = DataLoader(train, batch_size=batch_size, shuffle=False, num_workers=8, pin_memory=True, sampler=train_sampler)
     test_loader = DataLoader(test, batch_size=batch_size, shuffle=False, num_workers=8, pin_memory=True, sampler=test_sampler)
     val_loader = DataLoader(val, batch_size=5, shuffle=False, num_workers=8, pin_memory=True, sampler=val_sampler)
     
