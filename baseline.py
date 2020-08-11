@@ -52,7 +52,8 @@ def get_args():
 
 
 args = get_args()
-net, opt = build_model(lr=args.lr)
+lr = args.lr
+net, opt = build_model(lr)
 
 net_losses = []
 plot_step = 100
@@ -88,7 +89,7 @@ for epoch in range(args.epochs):
     if epoch % 20 == 0:
         lr = lr/2
     opt = torch.optim.SGD(net.params(), lr)
-    
+
     for i in tqdm(range(len(train))):
     # for i in range(8000):
         net.train()
