@@ -13,6 +13,22 @@ import numpy as np
 import os
 import argparse
 import logging
+import torch.distributed as dist
+
+
+def synchronize():
+    """
+    Helper function to synchronize (barrier) among all processes when
+    using distributed training
+    """
+    if not dist.is_available():
+        return
+    if not dist.is_initialized():
+        return
+    world_size = dist.get_world_size()
+    if world_size == 1:
+        return
+    dist.barrier()
 
 def to_var(x, requires_grad=True):
     if torch.cuda.is_available():
@@ -62,8 +78,20 @@ def train_net(noise_fraction,
     data = iter(data_loader)
     loss = nn.CrossEntropyLoss()
 
-
     net, opt = build_model(lr)
+    num_gpus = int(os.environ["WORLD_SIZE"]) if "WORLD_SIZE" in os.environ else 1
+    is_distributed = num_gpus > 1
+
+    if is_distributed:
+        torch.cuda.set_device(args.local_rank)  
+        torch.distributed.init_process_group(
+            backend="nccl", init_method="env://"
+        )
+        synchronize()
+        net = torch.nn.parallel.DistributedDataParallel(
+            net, device_ids=[args.local_rank], output_device=args.local_rank,
+        )
+    
     plot_step = 100
     accuracy_log = []
 
@@ -222,6 +250,8 @@ def get_args():
                         help='checkpoint path', dest='dir_checkpoint')
     parser.add_argument('-m', '--model-dir', metavar='MD', type=str, nargs='?', default='0.2/1/',
                         help='model path', dest='dir_model')
+    parser.add_argument('-r', '--local_rank', metavar='RA', type=int, nargs='?', default=0,
+                        help='from torch.distributed.launch', dest='local_rank')
 
     return parser.parse_args()
 
