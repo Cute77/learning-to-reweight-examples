@@ -5,7 +5,7 @@ import numpy as np
 import torchvision
 from torch.autograd import Variable
 import itertools
-from .utils import load_state_dict_from_url
+from torch.utils import load_state_dict_from_url
 
 
 __all__ = ['ResNet', 'resnet18', 'resnet34', 'resnet50', 'resnet101',
