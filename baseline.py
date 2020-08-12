@@ -25,7 +25,7 @@ def to_var(x, requires_grad=True):
 
 
 def build_model(lr):
-    net = model.resnet101(pretrained=True, num_classes=9)
+    net = model.resnet50(pretrained=True, num_classes=9)
     # net = model.LeNet(n_out=1)
 
     if torch.cuda.is_available():
@@ -42,7 +42,7 @@ def get_args():
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('-e', '--epochs', metavar='E', type=int, default=100,
                         help='Number of epochs', dest='epochs')
-    parser.add_argument('-b', '--batch-size', metavar='B', type=int, nargs='?', default=128,
+    parser.add_argument('-b', '--batch-size', metavar='B', type=int, nargs='?', default=32,
                         help='Batch size', dest='batch_size')
     parser.add_argument('-l', '--learning-rate', metavar='LR', type=float, nargs='?', default=1e-3,
                         help='Learning rate', dest='lr')
@@ -92,11 +92,11 @@ for epoch in range(args.epochs):
     num_y = 0
     test_num = 0
     correct_num = 0
-
+    '''
     if epoch % 10 == 0:
         lr = lr/2
     opt = torch.optim.SGD(net.params(), lr, weight_decay=1e-4)
-
+    '''
     for i in tqdm(range(len(train))):
     # for i in range(8000):
         net.train()
