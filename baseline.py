@@ -32,7 +32,7 @@ def build_model(lr):
         net.cuda()
         torch.backends.cudnn.benchmark = True
 
-    opt = torch.optim.SGD(net.params(), lr, weight_decay=1e-4)
+    opt = torch.optim.SGD(net.params(), lr, weight_decay=1e-3)
     
     return net, opt
 
@@ -50,6 +50,8 @@ def get_args():
                         help='image path', dest='imgs_dir')
     parser.add_argument('-n', '--noise-fraction', metavar='NF', type=float, nargs='?', default=0.2,
                         help='Noise Fraction', dest='noise_fraction')
+    parser.add_argument('-f', '--fig-path', metavar='FP', type=str, nargs='?', default='baseline.png',
+                        help='Fig Path', dest='figpath')
 
     return parser.parse_args()
 
@@ -61,6 +63,8 @@ lr = args.lr
 net, opt = build_model(lr)
 
 net_losses = []
+acc_test = []
+acc_train=[]
 plot_step = 100
 net_l = 0
 global_step = 0
@@ -148,6 +152,7 @@ for epoch in range(args.epochs):
     print('epoch ', epoch)
     print('epoch loss: ', epoch_loss/len(train))
     print('epoch accuracy: ', correct_y/num_y)
+    acc_train.append(correct_y/num_y)
     # writer.add_scalar('Accuracy/train', correct_y/num_y, epoch)
     path = 'baseline/' + str(args.noise_fraction) + '/model.pth'
     # path = 'baseline/' + str(args.noise_fraction) + '/model.pth'
@@ -155,20 +160,28 @@ for epoch in range(args.epochs):
     print('test accuracy: ', np.mean(acc_log[-6:-1, 1]))
     # writer.add_scalar('Accuracy/test', correct_num/test_num, epoch)
     print('test accuracy: ', correct_num/test_num)
+    acc_test.append(correct_num/test_num)
 
 IPython.display.clear_output()
-fig, axes = plt.subplots(1, 2, figsize=(13,5))
-ax1, ax2 = axes.ravel()
+fig, axes = plt.subplots(2, 2, figsize=(13, 5))
+ax1, ax2, ax3 = axes.ravel()
 
 ax1.plot(net_losses, label='net_losses')
 ax1.set_ylabel("Losses")
 ax1.set_xlabel("Iteration")
 ax1.legend()
 
-ax2.plot(acc_log[:,0],acc_log[:,1])
-ax2.set_ylabel('Accuracy')
-ax2.set_xlabel('Iteration')
-plt.savefig('baseline.png')    
+ax2.plot(acc_train, label='acc_train')
+ax2.set_ylabel('Accuracy/train')
+ax2.set_xlabel('Epoch')
+ax2.legend()
+
+ax3.plot(acc_test, label='acc_test')
+ax3.set_ylabel('Accuracy/test')
+ax3.set_xlabel('Epoch')
+ax3.legend()
+
+plt.savefig(args.figpath)    
 
 print(np.mean(acc_log[-6:-1, 1]))
 print('Accuracy: ', correct_num/test_num)
