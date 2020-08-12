@@ -13,7 +13,9 @@ from torch.utils.data import DataLoader
 import numpy as np
 import argparse
 import data_loader as dl
-from torch.utils.tensorboard import SummaryWriter
+import matplotlib
+import matplotlib.pyplot as plt
+# from torch.utils.tensorboard import SummaryWriter
 
 
 def to_var(x, requires_grad=True):
@@ -51,7 +53,7 @@ def get_args():
 
     return parser.parse_args()
 
-writer = SummaryWriter(comment=f'LR_{lr}_BS_{batch_size}')
+# writer = SummaryWriter(comment=f'LR_{lr}_BS_{batch_size}')
 
 args = get_args()
 lr = args.lr
@@ -109,8 +111,8 @@ for epoch in range(args.epochs):
         y = net(image)
         cost = loss(y, labels)
         epoch_loss = epoch_loss + cost.item()
-
-        writer.add_scalar('Loss/train', cost.item(), global_step)
+        net_losses.append(cost.item())
+        # writer.add_scalar('Loss/train', cost.item(), global_step)
 
         _, y_predicted = torch.max(y, 1)
         correct_y = correct_y + (y_predicted.int() == labels.int()).sum().item()
@@ -141,15 +143,30 @@ for epoch in range(args.epochs):
             accuracy_log.append(np.array([i, accuracy])[None])
             acc_log = np.concatenate(accuracy_log, axis=0)
     
+            IPython.display.clear_output()
+            fig, axes = plt.subplots(1, 2, figsize=(13,5))
+            ax1, ax2 = axes.ravel()
+
+            ax1.plot(net_losses, label='net_losses')
+            ax1.set_ylabel("Losses")
+            ax1.set_xlabel("Iteration")
+            ax1.legend()
+            
+            acc_log = np.concatenate(accuracy_log, axis=0)
+            ax2.plot(acc_log[:,0],acc_log[:,1])
+            ax2.set_ylabel('Accuracy')
+            ax2.set_xlabel('Iteration')
+            plt.savefig('baseline.png')
+
     print('epoch ', epoch)
     print('epoch loss: ', epoch_loss/len(train))
     print('epoch accuracy: ', correct_y/num_y)
-    writer.add_scalar('Accuracy/train', correct_y/num_y, epoch)
+    # writer.add_scalar('Accuracy/train', correct_y/num_y, epoch)
     path = 'baseline/' + str(args.noise_fraction) + '/model.pth'
     # path = 'baseline/' + str(args.noise_fraction) + '/model.pth'
     torch.save(net.state_dict(), path)
     print('test accuracy: ', np.mean(acc_log[-6:-1, 1]))
-    writer.add_scalar('Accuracy/test', correct_num/test_num, epoch)
+    # writer.add_scalar('Accuracy/test', correct_num/test_num, epoch)
     print('test accuracy: ', correct_num/test_num)
 
 print(np.mean(acc_log[-6:-1, 1]))
