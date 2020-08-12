@@ -55,6 +55,7 @@ def get_args():
 
 # writer = SummaryWriter(comment=f'LR_{lr}_BS_{batch_size}')
 
+
 args = get_args()
 lr = args.lr
 net, opt = build_model(lr)
@@ -91,10 +92,11 @@ for epoch in range(args.epochs):
     num_y = 0
     test_num = 0
     correct_num = 0
+    '''
     if epoch % 20 == 0:
         lr = lr/2
     opt = torch.optim.SGD(net.params(), lr)
-
+    '''
     for i in tqdm(range(len(train))):
     # for i in range(8000):
         net.train()
