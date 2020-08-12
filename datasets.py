@@ -40,7 +40,7 @@ class BasicDataset(Dataset):
         self.transform = transforms.Compose([
                transforms.Resize([224, 224]),
                transforms.ToTensor(), 
-               transforms.Normalize(mean=[0.485, 0.456, 0.406],)
+               transforms.Normalize(mean=[0.485, 0.456, 0.406],std=[1.0, 1.0, 1.0])
             ])
         
         '''
