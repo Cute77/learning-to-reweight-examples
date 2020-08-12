@@ -6,8 +6,8 @@ path = 'ISIC_2019_Training_GroundTruth_noisy.csv'
 # path_train = 'ISIC_2019_Training_GroundTruth_train.csv'
 # path_test = 'ISIC_2019_Training_GroundTruth_test.csv'
 
-path_train = 'ISIC_2019_Training_GroundTruth_sub_train.csv'
-path_test = 'ISIC_2019_Training_GroundTruth_sub_test.csv'
+path_train = 'ISIC_2019_Training_GroundTruth_sub1_train.csv'
+path_test = 'ISIC_2019_Training_GroundTruth_sub1_test.csv'
 
 fn = open(path, 'r+')
 data = []
@@ -15,7 +15,7 @@ for line in fn:
     data.append(line)
 
 random.shuffle(data)
-len_data = 3000
+len_data = 4375
 # len_data = len(data)
 offset = int(len_data * 0.8)
 
