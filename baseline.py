@@ -92,11 +92,11 @@ for epoch in range(args.epochs):
     num_y = 0
     test_num = 0
     correct_num = 0
-    '''
-    if epoch % 20 == 0:
+
+    if epoch % 10 == 0:
         lr = lr/2
-    opt = torch.optim.SGD(net.params(), lr)
-    '''
+    opt = torch.optim.SGD(net.params(), lr, weight_decay=1e-4)
+
     for i in tqdm(range(len(train))):
     # for i in range(8000):
         net.train()
