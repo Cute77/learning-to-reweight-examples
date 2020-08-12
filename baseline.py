@@ -142,21 +142,6 @@ for epoch in range(args.epochs):
             accuracy = torch.cat(acc, dim=0).mean()
             accuracy_log.append(np.array([i, accuracy])[None])
             acc_log = np.concatenate(accuracy_log, axis=0)
-    
-            IPython.display.clear_output()
-            fig, axes = plt.subplots(1, 2, figsize=(13,5))
-            ax1, ax2 = axes.ravel()
-
-            ax1.plot(net_losses, label='net_losses')
-            ax1.set_ylabel("Losses")
-            ax1.set_xlabel("Iteration")
-            ax1.legend()
-            
-            acc_log = np.concatenate(accuracy_log, axis=0)
-            ax2.plot(acc_log[:,0],acc_log[:,1])
-            ax2.set_ylabel('Accuracy')
-            ax2.set_xlabel('Iteration')
-            plt.savefig('baseline.png')
 
     print('epoch ', epoch)
     print('epoch loss: ', epoch_loss/len(train))
@@ -168,6 +153,20 @@ for epoch in range(args.epochs):
     print('test accuracy: ', np.mean(acc_log[-6:-1, 1]))
     # writer.add_scalar('Accuracy/test', correct_num/test_num, epoch)
     print('test accuracy: ', correct_num/test_num)
+
+IPython.display.clear_output()
+fig, axes = plt.subplots(1, 2, figsize=(13,5))
+ax1, ax2 = axes.ravel()
+
+ax1.plot(net_losses, label='net_losses')
+ax1.set_ylabel("Losses")
+ax1.set_xlabel("Iteration")
+ax1.legend()
+
+ax2.plot(acc_log[:,0],acc_log[:,1])
+ax2.set_ylabel('Accuracy')
+ax2.set_xlabel('Iteration')
+plt.savefig('baseline.png')    
 
 print(np.mean(acc_log[-6:-1, 1]))
 print('Accuracy: ', correct_num/test_num)
