@@ -25,7 +25,7 @@ def to_var(x, requires_grad=True):
 
 
 def build_model(lr):
-    net = model.resnet50(pretrained=True, num_classes=9)
+    net = model.resnet101(pretrained=True, num_classes=9)
     # net = model.LeNet(n_out=1)
 
     if torch.cuda.is_available():
@@ -64,7 +64,7 @@ net, opt = build_model(lr)
 
 net_losses = []
 acc_test = []
-acc_train=[]
+acc_train = []
 plot_step = 100
 net_l = 0
 global_step = 0
@@ -163,7 +163,7 @@ for epoch in range(args.epochs):
     acc_test.append(correct_num/test_num)
 
 IPython.display.clear_output()
-fig, axes = plt.subplots(2, 2, figsize=(13, 5))
+fig, axes = plt.subplots(1, 3, figsize=(13, 5))
 ax1, ax2, ax3 = axes.ravel()
 
 ax1.plot(net_losses, label='net_losses')
