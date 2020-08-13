@@ -4,18 +4,20 @@ from PIL import Image
 # path = 'ISIC_2019_Training_GroundTruth_train_0.2.csv'
 img_dir = 'ISIC_2019_Training_Input/' 
 path = 'ISIC_2019_Training_GroundTruth_sub1_train.csv'
-augment_fraction = 0.5
+augment_fraction = 0.75
 
 fn = open(path, 'r+')
 data = []
+datas = []
 for line in fn:
     data.append(line)
 fn.close
 
 len_data = len(data)
-offset = int(len_data * augment_fraction)
+offset = int(len_data * (augment_fraction-0.5))
+de = int(len_data * 0.5)
 
-change_data = data[:offset]
+change_data = data[de: (de+offset)]
 augment_data = []
 
 for line in change_data:
@@ -32,14 +34,19 @@ for line in change_data:
     new_line = new_name + ',' + label + '\n'
     augment_data.append(new_line)
 
-for index in range(offset):
-    data.append(augment_data[index])
+patha = 'ISIC_2019_Training_GroundTruth_sub1_train_aug0.5.csv'
+faa = open(patha, 'r+')
+for line in faa:
+    datas.append(line)
 
-random.shuffle(data)
+for index in range(offset):
+    datas.append(augment_data[index])
+
+# random.shuffle(data)
 
 path_augment = 'ISIC_2019_Training_GroundTruth_sub1_train_aug' + str(augment_fraction) + '.csv'
 fa = open(path_augment, 'w')
 
-for line in data:
+for line in datas:
     fa.write(line)
 fa.close
