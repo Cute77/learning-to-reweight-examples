@@ -80,8 +80,8 @@ accuracy_log = []
 train = BasicDataset(imgs_dir=args.imgs_dir, mode='base')
 test = BasicDataset(imgs_dir=args.imgs_dir, mode='test')
 
-data_loader = DataLoader(train, batch_size=args.batch_size, shuffle=True, num_workers=4, pin_memory=True)
-test_loader = DataLoader(test, batch_size=args.batch_size, shuffle=False, num_workers=4, pin_memory=True)
+data_loader = DataLoader(train, batch_size=args.batch_size, shuffle=True, num_workers=8, pin_memory=True)
+test_loader = DataLoader(test, batch_size=args.batch_size, shuffle=False, num_workers=8, pin_memory=True)
 
 data = iter(data_loader)
 loss = nn.CrossEntropyLoss()
