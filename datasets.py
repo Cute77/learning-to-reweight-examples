@@ -22,7 +22,7 @@ class BasicDataset(Dataset):
             datatxt = 'ISIC_2019_Training_GroundTruth_sub_clean.csv'    
 
         if mode == 'base':
-            datatxt = 'ISIC_2019_Training_GroundTruth_sub1_train_aug0.75.csv'        
+            datatxt = 'ISIC_2019_Training_GroundTruth_sub1_train.csv'        
 
         # datatxt = 'ISIC_2019_Training_GroundTruth.csv'
         # lean_datatxt = 'ISIC_2019_Training_GroundTruth_clean.csv'
@@ -39,6 +39,8 @@ class BasicDataset(Dataset):
         self.imgs_dir = imgs_dir
         self.transform = transforms.Compose([
                transforms.Resize([224, 224]),
+               transforms.RandomHorizontalFlip(),
+               transforms.RandomRotation(degrees=(-45, 45)),
                transforms.ToTensor(), 
                transforms.Normalize(mean=[0.485, 0.456, 0.406],std=[1.0, 1.0, 1.0])
             ])
