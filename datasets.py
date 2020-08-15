@@ -69,11 +69,11 @@ class BasicDataset(Dataset):
         label = labels.index('1.0')
 
         img = Image.open(self.imgs_dir+fn+'.jpg').convert('RGB')
-        img = self.transform(img)
-
-        variance = np.random.randint(0, 5)
+        variance = np.random.randint(0, 10)
         if variance == 0:
-            img = torch.tensor(random_noise(np.array(img), mode='gaussian', mean=0, var=0.05)).double()
+            img = img.filter(ImageFilter.GaussianBlur(radius=2))
+            
+        img = self.transform(img)
 
         return img, label
 
