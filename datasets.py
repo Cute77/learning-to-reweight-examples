@@ -42,7 +42,7 @@ class BasicDataset(Dataset):
                transforms.RandomHorizontalFlip(),
                transforms.RandomRotation(degrees=(-90, 90)),
                transforms.ToTensor(), 
-               transforms.Normalize(mean=[0.485, 0.456, 0.406],std=[1.0, 1.0, 1.0])
+               transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[1.0, 1.0, 1.0])
             ])
         
         '''
@@ -71,11 +71,9 @@ class BasicDataset(Dataset):
         img = Image.open(self.imgs_dir+fn+'.jpg').convert('RGB')
         img = self.transform(img)
 
-        variance = np.random.randint(0, 5) * 0.01
-        if variance != 0:
-            img_noise = random_noise(np.array(img), mode='gaussian', mean=0, var=variance)
-            tran = transforms.ToTensor()
-            img = tran(img_noise).float()
+        variance = np.random.randint(0, 5)
+        if variance == 0:
+            img = torch.tensor(random_noise(np.array(img), mode='gaussian', mean=0, var=0.05))
 
         return img, label
 
