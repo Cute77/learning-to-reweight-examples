@@ -75,7 +75,7 @@ class BasicDataset(Dataset):
         if variance != 0:
             img_noise = random_noise(np.array(img), mode='gaussian', mean=0, var=variance)
             tran = transforms.ToTensor()
-            img = tran(img_noise)
+            img = tran(img_noise).float()
 
         return img, label
 
