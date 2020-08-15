@@ -69,11 +69,13 @@ class BasicDataset(Dataset):
         label = labels.index('1.0')
 
         img = Image.open(self.imgs_dir+fn+'.jpg').convert('RGB')
+        img = self.transform(img)
+
         variance = np.random.randint(0, 5) * 0.01
         if variance != 0:
-            img = random_noise(np.array(img), mode='gaussian', mean=0, var=variance)
-
-        img = self.transform(img)
+            img_noise = random_noise(np.array(img), mode='gaussian', mean=0, var=variance)
+            tran = transforms.ToTensor()
+            img = tran(img_noise)
 
         return img, label
 
