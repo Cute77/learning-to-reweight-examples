@@ -158,7 +158,7 @@ for epoch in range(args.epochs):
     print('epoch accuracy: ', correct_y/num_y)
     acc_train.append(correct_y/num_y)
     writer.add_scalar('EpochAccuracy/train', correct_y/num_y, epoch)
-    path = 'baseline/' + args.figpath + '/model.pth'
+    path = 'baseline/' + args.figpath + '_model.pth'
     # path = 'baseline/' + str(args.noise_fraction) + '/model.pth'
     torch.save(net.state_dict(), path)
     print('test accuracy: ', np.mean(acc_log[-6:-1, 1]))
