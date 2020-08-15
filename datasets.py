@@ -8,7 +8,7 @@ import logging
 from PIL import Image
 from torchvision import transforms, datasets
 import argparse
-
+from skimage.util import random_noise
 
 class BasicDataset(Dataset):
     def __init__(self, imgs_dir, noise_fraction=None, mode='train', target_transform=None):
@@ -40,7 +40,7 @@ class BasicDataset(Dataset):
         self.transform = transforms.Compose([
                transforms.Resize([224, 224]),
                transforms.RandomHorizontalFlip(),
-               transforms.RandomRotation(degrees=(-45, 45)),
+               transforms.RandomRotation(degrees=(-90, 90)),
                transforms.ToTensor(), 
                transforms.Normalize(mean=[0.485, 0.456, 0.406],std=[1.0, 1.0, 1.0])
             ])
@@ -71,8 +71,11 @@ class BasicDataset(Dataset):
         img = Image.open(self.imgs_dir+fn+'.jpg').convert('RGB')
         img = self.transform(img)
 
-        return img, label
+        variance = np.random.randint(0, 5) * 0.01
+        if variance != 0:
+            img = random_noise(np.array(img), mode='gaussian', mean=0, var=variance)
 
+        return img, label
 
     def __len__(self):
         return len(self.imgs)
