@@ -73,7 +73,7 @@ class BasicDataset(Dataset):
 
         variance = np.random.randint(0, 5)
         if variance == 0:
-            img = torch.tensor(random_noise(np.array(img), mode='gaussian', mean=0, var=0.05))
+            img = torch.tensor(random_noise(np.array(img), mode='gaussian', mean=0, var=0.05)).double()
 
         return img, label
 
