@@ -5,7 +5,7 @@ from glob import glob
 import torch
 from torch.utils.data import Dataset
 import logging
-from PIL import Image
+from PIL import Image, ImageFilter
 from torchvision import transforms, datasets
 import argparse
 from skimage.util import random_noise
@@ -72,7 +72,7 @@ class BasicDataset(Dataset):
         variance = np.random.randint(0, 10)
         if variance == 0:
             img = img.filter(ImageFilter.GaussianBlur(radius=2))
-            
+
         img = self.transform(img)
 
         return img, label
