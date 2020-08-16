@@ -75,6 +75,7 @@ class BasicDataset(Dataset):
         if variance > 0:
             img = img.filter(ImageFilter.GaussianBlur(radius=2))
             img = random_noise(np.array(img), mode='gaussian', var=variance)
+            img = img.astype(np.uint8)
             img = transforms.ToPILImage()(img)
 
         img = self.transform(img)
