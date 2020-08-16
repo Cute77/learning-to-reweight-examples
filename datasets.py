@@ -16,13 +16,13 @@ class BasicDataset(Dataset):
             datatxt = 'ISIC_2019_Training_GroundTruth_sub_train_' + str(noise_fraction) + '.csv'
 
         if mode == 'test':
-            datatxt = 'ISIC_2019_Training_GroundTruth_sub1_test.csv'
+            datatxt = 'ISIC_2019_Training_GroundTruth_sub2_test.csv'
 
         if mode == 'val':
             datatxt = 'ISIC_2019_Training_GroundTruth_sub_clean.csv'    
 
         if mode == 'base':
-            datatxt = 'ISIC_2019_Training_GroundTruth_sub1_train.csv'        
+            datatxt = 'ISIC_2019_Training_GroundTruth_sub2_train.csv'        
 
         # datatxt = 'ISIC_2019_Training_GroundTruth.csv'
         # lean_datatxt = 'ISIC_2019_Training_GroundTruth_clean.csv'
