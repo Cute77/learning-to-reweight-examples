@@ -37,11 +37,11 @@ class BasicDataset(Dataset):
         self.imgs = imgs
         self.target_transform = target_transform
         self.imgs_dir = imgs_dir
-        self.transform = transforms.Compose([
-               transforms.Resize([224, 224]),
+        self.transform = transforms.Compose([ 
                transforms.RandomHorizontalFlip(),
                transforms.RandomRotation(degrees=(-180, 180)),
-               transforms.RandomGrayscale(p=0.1),  
+               transforms.RandomGrayscale(p=0.1),
+               transforms.RandomResizedCrop(size=(224, 224), scale=(0.5, 1.0)),  
                transforms.ToTensor(), 
                transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[1.0, 1.0, 1.0])
             ])
