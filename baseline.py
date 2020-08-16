@@ -60,7 +60,7 @@ args = get_args()
 lr = args.lr
 net, opt = build_model(lr)
 
-writer = SummaryWriter(comment=f'LR_{lr}')
+writer = SummaryWriter(comment=f'name_{args.figpath}')
 
 net_losses = []
 acc_test = []
