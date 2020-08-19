@@ -41,8 +41,8 @@ class BasicDataset(Dataset):
                transforms.RandomHorizontalFlip(),
                transforms.RandomRotation(degrees=(-180, 180)),
                transforms.RandomGrayscale(p=0.1),
-               # transforms.RandomResizedCrop(size=224, scale=(0.5, 1.0)), 
-               transforms.Resize([224, 224]), 
+               transforms.RandomResizedCrop(size=224, scale=(0.5, 1.0)), 
+               # transforms.Resize([224, 224]), 
                transforms.ToTensor(), 
                transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[1.0, 1.0, 1.0])
             ])
@@ -71,14 +71,14 @@ class BasicDataset(Dataset):
         label = labels.index('1.0')
 
         img = Image.open(self.imgs_dir+fn+'.jpg').convert('RGB')
-
+        '''
         variance = np.random.randint(-5, 5) * 0.01
         if variance > 0:
             img = img.filter(ImageFilter.GaussianBlur(radius=2))
             img = random_noise(np.array(img), mode='gaussian', var=variance)
             img = img.astype(np.uint8)
             img = transforms.ToPILImage()(img)
-
+        '''
         img = self.transform(img)
 
         return img, label
