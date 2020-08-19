@@ -40,7 +40,7 @@ def build_model(lr):
 def get_args():
     parser = argparse.ArgumentParser(description='Learning to reweight on classification tasks',
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument('-e', '--epochs', metavar='E', type=int, default=100,
+    parser.add_argument('-e', '--epochs', metavar='E', type=int, default=50,
                         help='Number of epochs', dest='epochs')
     parser.add_argument('-b', '--batch-size', metavar='B', type=int, nargs='?', default=32,
                         help='Batch size', dest='batch_size')
