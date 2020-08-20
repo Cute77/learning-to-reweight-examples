@@ -39,7 +39,7 @@ class BasicDataset(Dataset):
         self.imgs_dir = imgs_dir
         self.transform = transforms.Compose([ 
                transforms.RandomHorizontalFlip(),
-               transforms.RandomRotation(degrees=60),
+               transforms.RandomRotation(degrees=135),
                transforms.RandomGrayscale(p=0.1),
                transforms.RandomResizedCrop(size=224, scale=(0.08, 1.0)), 
                # transforms.Resize([224, 224]), 
