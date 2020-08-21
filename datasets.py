@@ -8,7 +8,7 @@ import logging
 from PIL import Image, ImageFilter
 from torchvision import transforms, datasets
 import argparse
-from skimage.util import random_noise
+# from skimage.util import random_noise
 
 class BasicDataset(Dataset):
     def __init__(self, imgs_dir, noise_fraction=None, mode='train', target_transform=None):
@@ -39,10 +39,10 @@ class BasicDataset(Dataset):
         self.imgs_dir = imgs_dir
         self.transform = transforms.Compose([ 
                transforms.RandomHorizontalFlip(),
-               transforms.RandomRotation(degrees=90),
+               transforms.RandomRotation(degrees=180),
                # transforms.RandomGrayscale(p=0.1),
-               transforms.RandomResizedCrop(size=224, scale=(0.3, 1.0)), 
-               # transforms.Resize([224, 224]), 
+               # transforms.RandomResizedCrop(size=224, scale=(0.3, 1.0)), 
+               transforms.Resize([224, 224]), 
                transforms.ToTensor(), 
                transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[1.0, 1.0, 1.0])
             ])
