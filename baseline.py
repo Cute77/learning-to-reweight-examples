@@ -25,7 +25,7 @@ def to_var(x, requires_grad=True):
 
 
 def build_model(lr):
-    net = model.resnet50(pretrained=True, num_classes=9)
+    net = model.resnet101(pretrained=True, num_classes=9)
     # net = model.LeNet(n_out=1)
 
     if torch.cuda.is_available():

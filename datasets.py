@@ -16,13 +16,13 @@ class BasicDataset(Dataset):
             datatxt = 'ISIC_2019_Training_GroundTruth_sub_train_' + str(noise_fraction) + '.csv'
 
         if mode == 'test':
-            datatxt = 'ISIC_2019_Training_GroundTruth_sub2_test.csv'
+            datatxt = 'ISIC_2019_Training_GroundTruth_sub1250_test.csv'
 
         if mode == 'val':
             datatxt = 'ISIC_2019_Training_GroundTruth_sub_clean.csv'    
 
         if mode == 'base':
-            datatxt = 'ISIC_2019_Training_GroundTruth_sub2_train.csv'        
+            datatxt = 'ISIC_2019_Training_GroundTruth_sub5000_train.csv'        
 
         # datatxt = 'ISIC_2019_Training_GroundTruth.csv'
         # lean_datatxt = 'ISIC_2019_Training_GroundTruth_clean.csv'
@@ -39,10 +39,10 @@ class BasicDataset(Dataset):
         self.imgs_dir = imgs_dir
         self.transform = transforms.Compose([ 
                transforms.RandomHorizontalFlip(),
-               transforms.RandomRotation(degrees=90),
+               transforms.RandomRotation(degrees=180),
                # transforms.RandomGrayscale(p=0.1),
                transforms.RandomResizedCrop(size=224, scale=(0.3, 1.0)), 
-               #transforms.Resize([224, 224]), 
+               # transforms.Resize([224, 224]), 
                transforms.ToTensor(), 
                transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[1.0, 1.0, 1.0])
             ])
