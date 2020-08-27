@@ -16,6 +16,7 @@ import data_loader as dl
 import matplotlib
 import matplotlib.pyplot as plt
 from tensorboardX import SummaryWriter
+import logging
 
 
 def to_var(x, requires_grad=True):
@@ -61,6 +62,12 @@ lr = args.lr
 net, opt = build_model(lr)
 
 writer = SummaryWriter(comment=f'name_{args.figpath}')
+logging.info(f'''Starting training:
+    Epochs:          {args.epochs}
+    Batch size:      {args.batch_size}
+    Learning rate:   {args.lr}
+    Noise fraction:  {args.noise_fraction}
+''')
 
 net_losses = []
 acc_test = []
@@ -77,8 +84,8 @@ accuracy_log = []
 # test_loader = dl.get_mnist_loader(args.batch_size, classes=[9, 4], proportion=0.5, mode="test")
 
 
-# train = BasicDataset(imgs_dir=args.imgs_dir, noise_fraction=args.noise_fraction, mode='train')
-train = BasicDataset(imgs_dir=args.imgs_dir, mode='base')
+train = BasicDataset(imgs_dir=args.imgs_dir, noise_fraction=args.noise_fraction, mode='train')
+# train = BasicDataset(imgs_dir=args.imgs_dir, mode='base')
 test = BasicDataset(imgs_dir=args.imgs_dir, mode='test')
 
 data_loader = DataLoader(train, batch_size=args.batch_size, shuffle=True, num_workers=8, pin_memory=True)
