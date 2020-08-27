@@ -62,6 +62,7 @@ lr = args.lr
 net, opt = build_model(lr)
 
 writer = SummaryWriter(comment=f'name_{args.figpath}')
+
 logging.info(f'''Starting training:
     Epochs:          {args.epochs}
     Batch size:      {args.batch_size}

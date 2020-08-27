@@ -14,16 +14,20 @@ class BasicDataset(Dataset):
     def __init__(self, imgs_dir, noise_fraction=None, mode='train', target_transform=None):
         if mode == 'train':
             datatxt = 'ISIC_2019_Training_GroundTruth_sub5000_train_' + str(noise_fraction) + '.csv'
+            print(datatxt)
 
         if mode == 'test':
             datatxt = 'ISIC_2019_Training_GroundTruth_sub1250_test.csv'
+            print(datatxt)
 
         if mode == 'val':
             datatxt = 'ISIC_2019_Training_GroundTruth_sub_clean.csv'    
+            print(datatxt)
 
         if mode == 'base':
             datatxt = 'ISIC_2019_Training_GroundTruth_sub5000_train.csv'        
-
+            print(datatxt)
+            
         # datatxt = 'ISIC_2019_Training_GroundTruth.csv'
         # lean_datatxt = 'ISIC_2019_Training_GroundTruth_clean.csv'
         
