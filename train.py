@@ -64,6 +64,20 @@ def train_net(noise_fraction,
               dir_checkpoint='checkpoints/ISIC_2019_Training_Input/',
               epochs=10):
 
+    net, opt = build_model(lr)
+    num_gpus = int(os.environ["WORLD_SIZE"]) if "WORLD_SIZE" in os.environ else 1
+    is_distributed = num_gpus > 1
+
+    if is_distributed:
+        torch.cuda.set_device(local_rank)  
+        torch.distributed.init_process_group(
+            backend="nccl", init_method="env://"
+        )
+        synchronize()
+        net = torch.nn.parallel.DistributedDataParallel(
+            net, device_ids=[local_rank], output_device=local_rank,
+        )
+
     train = BasicDataset(dir_img, noise_fraction, mode='train')
     test = BasicDataset(dir_img, noise_fraction, mode='test')
     val = BasicDataset(dir_img, noise_fraction, mode='val')
@@ -89,20 +103,6 @@ def train_net(noise_fraction,
     data = iter(data_loader)
     loss = nn.CrossEntropyLoss()
     writer = SummaryWriter(comment=f'name_{args.figpath}')
-
-    net, opt = build_model(lr)
-    num_gpus = int(os.environ["WORLD_SIZE"]) if "WORLD_SIZE" in os.environ else 1
-    is_distributed = num_gpus > 1
-
-    if is_distributed:
-        torch.cuda.set_device(local_rank)  
-        torch.distributed.init_process_group(
-            backend="nccl", init_method="env://"
-        )
-        synchronize()
-        net = torch.nn.parallel.DistributedDataParallel(
-            net, device_ids=[local_rank], output_device=local_rank,
-        )
     
     plot_step = 100
     accuracy_log = []
