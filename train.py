@@ -14,6 +14,7 @@ import os
 import argparse
 import logging
 import torch.distributed as dist
+from torch.utils.data import distributed
 import matplotlib
 import matplotlib.pyplot as plt
 from tensorboardX import SummaryWriter
@@ -70,9 +71,9 @@ def train_net(noise_fraction,
     # n_train = len(dataset) - n_val
     # train, test = random_split(dataset, [n_train, n_test])
 
-    train_sampler = torch.utils.data.distributed.DistributedSampler(train)
-    test_sampler = torch.utils.data.distributed.DistributedSampler(test)
-    val_sampler = torch.utils.data.distributed.DistributedSampler(val)
+    train_sampler = distributed.DistributedSampler(train)
+    test_sampler = distributed.DistributedSampler(test)
+    val_sampler = distributed.DistributedSampler(val)
 
     data_loader = DataLoader(train, batch_size=batch_size, shuffle=False, num_workers=8, pin_memory=True, sampler=train_sampler)
     test_loader = DataLoader(test, batch_size=batch_size, shuffle=False, num_workers=8, pin_memory=True, sampler=test_sampler)
