@@ -14,6 +14,9 @@ import os
 import argparse
 import logging
 import torch.distributed as dist
+import matplotlib
+import matplotlib.pyplot as plt
+from tensorboardX import SummaryWriter
 
 
 def synchronize():
@@ -38,7 +41,7 @@ def to_var(x, requires_grad=True):
 
 
 def build_model(lr):
-    net = model.resnet101(pretrained=False, num_classes=9)
+    net = model.resnet101(pretrained=True, num_classes=9)
 
     if torch.cuda.is_available():
         net.cuda()
@@ -84,6 +87,7 @@ def train_net(noise_fraction,
 
     data = iter(data_loader)
     loss = nn.CrossEntropyLoss()
+    writer = SummaryWriter(comment=f'name_{args.figpath}')
 
     net, opt = build_model(lr)
     num_gpus = int(os.environ["WORLD_SIZE"]) if "WORLD_SIZE" in os.environ else 1
@@ -101,6 +105,14 @@ def train_net(noise_fraction,
     
     plot_step = 100
     accuracy_log = []
+    net_losses = []
+    acc_test = []
+    acc_train = []
+    loss_train = []
+    plot_step = 100
+    net_l = 0
+    global_step = 0
+    test_step = 0
 
     if local_rank == 0:
         logging.info(f'''Starting training:
@@ -131,7 +143,7 @@ def train_net(noise_fraction,
             # image, labels = next(iter(data_loader))
             # since validation data is small I just fixed them instead of building an iterator
             # initialize a dummy network for the meta learning of the weights
-            meta_net = model.resnet101(pretrained=False, num_classes=9)
+            meta_net = model.resnet101(pretrained=True, num_classes=9)
             meta_net.load_state_dict(net.state_dict())
 
             if torch.cuda.is_available():
@@ -185,11 +197,14 @@ def train_net(noise_fraction,
             _, y_predicted = torch.max(y_f_hat, 1)
             correct_y = correct_y + (y_predicted.int() == labels.int()).sum().item()
             num_y = num_y + labels.size(0) 
+            writer.add_scalar('StepAccuracy/train', ((y_predicted.int() == labels.int()).sum().item()/labels.size(0)), global_step)
             
             cost = loss(y_f_hat, labels)
 
             # cost = F.binary_cross_entropy_with_logits(y_f_hat, labels, reduce=False)
             l_f = torch.sum(cost * w)
+            net .append(l_f.item())
+            writer.add_scalar('StepLoss/train', l_f.item(), global_step)
             epoch_loss = epoch_loss + l_f.item()
 
             opt.zero_grad()
@@ -216,31 +231,73 @@ def train_net(noise_fraction,
                     test_num = test_num + test_label.size(0)
                     correct_num = correct_num + (predicted.int() == test_label.int()).sum().item()
                     acc.append((predicted.int() == test_label.int()).float())
+                    writer.add_scalar('StepAccuracy/test', ((predicted.int() == test_label.int()).sum().item()/test_label.size(0)), test_step)
+                    test_step = test_step + 1
 
                 accuracy = torch.cat(acc, dim=0).mean()
                 accuracy_log.append(np.array([i, accuracy])[None])
                 acc_log = np.concatenate(accuracy_log, axis=0)
                 
-            if save_cp:
-                try:
-                    os.mkdir(dir_checkpoint)
-                    logging.info('Created checkpoint directory')
-                except OSError:
-                    pass
-                torch.save(net.state_dict(),
-                           dir_checkpoint + f'CP_epoch{epoch + 1}.pth')
-                # logging.info(f'Checkpoint {epoch + 1} saved !')
+        if save_cp:
+            try:
+                os.mkdir(dir_checkpoint)
+                logging.info('Created checkpoint directory')
+            except OSError:
+                pass
+            torch.save(net.state_dict(),
+                        dir_checkpoint + f'CP_epoch{epoch + 1}.pth')
+            # logging.info(f'Checkpoint {epoch + 1} saved !')
 
         print('epoch ', epoch)
+
         print('epoch loss: ', epoch_loss/len(train))
+        loss_train.append(epoch_loss/len(train))
+        writer.add_scalar('EpochLoss/train', epoch_loss/len(train), epoch)
+
         print('epoch accuracy: ', correct_y/num_y)
+        acc_train.append(correct_y/num_y)
+        writer.add_scalar('EpochAccuracy/train', correct_y/num_y, epoch)
 
-        path = model_path + 'model.pth'
-        if local_rank == 0:
-            torch.save(net.state_dict(), path)    
+        # path = 'baseline/' + args.figpath + '_model.pth'
+        # path = 'baseline/' + str(args.noise_fraction) + '/model.pth'
+        # torch.save(net.state_dict(), path)
 
-        print('test accuracy: ', np.mean(acc_log[-6:-1, 1]))
         print('test accuracy: ', correct_num/test_num)
+        writer.add_scalar('EpochAccuracy/test', correct_num/test_num, epoch)
+        acc_test.append(correct_num/test_num)
+
+        path = 'baseline/' + args.figpath + '_model.pth'
+        if is_distributed and local_rank == 0:
+            torch.save(net.state_dict(), path) 
+        else:
+            path = 'baseline/' + args.figpath + '_model.pth'
+            torch.save(net.state_dict(), path)   
+
+    IPython.display.clear_output()
+    fig, axes = plt.subplots(2, 2, figsize=(13, 5))
+    ax1, ax2, ax3, ax4 = axes.ravel()
+
+    ax1.plot(net_losses, label='train_losses')
+    ax1.set_ylabel("Losses")
+    ax1.set_xlabel("Iteration")
+    ax1.legend()
+
+    ax2.plot(loss_train, label='epoch_losses')
+    ax2.set_ylabel('Losses/train')
+    ax2.set_xlabel('Epoch')
+    ax2.legend()
+
+    ax3.plot(acc_train, label='acc_train')
+    ax3.set_ylabel('Accuracy/train')
+    ax3.set_xlabel('Epoch')
+    ax3.legend()
+
+    ax4.plot(acc_test, label='acc_test')
+    ax4.set_ylabel('Accuracy/test')
+    ax4.set_xlabel('Epoch')
+    ax4.legend()
+
+    plt.savefig(args.figpath+'.png')
         # return accuracy
     return net, np.mean(acc_log[-6:-1, 1])
 
@@ -260,8 +317,8 @@ def get_args():
                         help='Noise Fraction', dest='noise_fraction')
     parser.add_argument('-c', '--checkpoint-dir', metavar='CD', type=str, nargs='?', default='checkpoints/ISIC_2019_Training_Input/',
                         help='checkpoint path', dest='dir_checkpoint')
-    parser.add_argument('-m', '--model-dir', metavar='MD', type=str, nargs='?', default='0.2/1/',
-                        help='model path', dest='dir_model')
+    parser.add_argument('-f', '--fig-path', metavar='FP', type=str, nargs='?', default='baseline',
+                        help='Fig Path', dest='figpath')
     parser.add_argument('-r', '--local_rank', metavar='RA', type=int, nargs='?', default=0,
                         help='from torch.distributed.launch', dest='local_rank')
 

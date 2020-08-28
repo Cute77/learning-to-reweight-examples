@@ -73,6 +73,7 @@ logging.info(f'''Starting training:
 net_losses = []
 acc_test = []
 acc_train = []
+loss_train = []
 plot_step = 100
 net_l = 0
 global_step = 0
@@ -155,6 +156,7 @@ for epoch in range(args.epochs):
                 correct_num = correct_num + (predicted.int() == test_label.int()).sum().item()
                 acc.append((predicted.int() == test_label.int()).float())
                 writer.add_scalar('StepAccuracy/test', ((predicted.int() == test_label.int()).sum().item()/test_label.size(0)), test_step)
+                test_step = test_step + 1
 
             accuracy = torch.cat(acc, dim=0).mean()
             accuracy_log.append(np.array([i, accuracy])[None])
@@ -163,35 +165,44 @@ for epoch in range(args.epochs):
 
     print('epoch ', epoch)
     print('epoch loss: ', epoch_loss/len(train))
+    loss_train.append(epoch_loss/len(train))
+    writer.add_scalar('EpochAccuracy/train', epoch_loss/len(train), epoch)
+
     print('epoch accuracy: ', correct_y/num_y)
     acc_train.append(correct_y/num_y)
     writer.add_scalar('EpochAccuracy/train', correct_y/num_y, epoch)
+
     path = 'baseline/' + args.figpath + '_model.pth'
     # path = 'baseline/' + str(args.noise_fraction) + '/model.pth'
     torch.save(net.state_dict(), path)
-    print('test accuracy: ', np.mean(acc_log[-6:-1, 1]))
+
     writer.add_scalar('EpochAccuracy/test', correct_num/test_num, epoch)
     print('test accuracy: ', correct_num/test_num)
     acc_test.append(correct_num/test_num)
 
 IPython.display.clear_output()
-fig, axes = plt.subplots(1, 3, figsize=(13, 5))
-ax1, ax2, ax3 = axes.ravel()
+fig, axes = plt.subplots(2, 2, figsize=(13, 5))
+ax1, ax2, ax3, ax4 = axes.ravel()
 
-ax1.plot(net_losses, label='net_losses')
+ax1.plot(net_losses, label='train_losses')
 ax1.set_ylabel("Losses")
 ax1.set_xlabel("Iteration")
 ax1.legend()
 
-ax2.plot(acc_train, label='acc_train')
-ax2.set_ylabel('Accuracy/train')
+ax2.plot(loss_train, label='epoch_losses')
+ax2.set_ylabel('Losses/train')
 ax2.set_xlabel('Epoch')
 ax2.legend()
 
-ax3.plot(acc_test, label='acc_test')
-ax3.set_ylabel('Accuracy/test')
+ax3.plot(acc_train, label='acc_train')
+ax3.set_ylabel('Accuracy/train')
 ax3.set_xlabel('Epoch')
 ax3.legend()
+
+ax4.plot(acc_test, label='acc_test')
+ax4.set_ylabel('Accuracy/test')
+ax4.set_xlabel('Epoch')
+ax4.legend()
 
 plt.savefig(args.figpath+'.png')    
 
