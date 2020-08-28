@@ -181,7 +181,7 @@ for epoch in range(args.epochs):
     acc_test.append(correct_num/test_num)
 
 IPython.display.clear_output()
-fig, axes = plt.subplots(2, 2, figsize=(13, 5))
+fig, axes = plt.subplots(2, 2)
 ax1, ax2, ax3, ax4 = axes.ravel()
 
 ax1.plot(net_losses, label='train_losses')

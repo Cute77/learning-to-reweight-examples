@@ -53,7 +53,7 @@ def build_model(lr):
 
 
 def train_net(noise_fraction, 
-              model_path,
+              fig_path,
               local_rank,
               lr=1e-3,
               momentum=0.9, 
@@ -122,7 +122,7 @@ def train_net(noise_fraction,
             Checkpoints:     {save_cp}
             Noise fraction:  {noise_fraction}
             Image dir:       {dir_img}
-            Model dir:       {model_path}
+            Model dir:       {fig_path}
         ''')
 
 
@@ -266,15 +266,14 @@ def train_net(noise_fraction,
         writer.add_scalar('EpochAccuracy/test', correct_num/test_num, epoch)
         acc_test.append(correct_num/test_num)
 
-        path = 'baseline/' + args.figpath + '_model.pth'
+        path = 'baseline/' + fig_path + '_model.pth'
         if is_distributed and local_rank == 0:
             torch.save(net.state_dict(), path) 
         else:
-            path = 'baseline/' + args.figpath + '_model.pth'
             torch.save(net.state_dict(), path)   
 
     IPython.display.clear_output()
-    fig, axes = plt.subplots(2, 2, figsize=(13, 5))
+    fig, axes = plt.subplots(2, 2)
     ax1, ax2, ax3, ax4 = axes.ravel()
 
     ax1.plot(net_losses, label='train_losses')
@@ -297,7 +296,7 @@ def train_net(noise_fraction,
     ax4.set_xlabel('Epoch')
     ax4.legend()
 
-    plt.savefig(args.figpath+'.png')
+    plt.savefig(fig_path+'.png')
         # return accuracy
     return net, np.mean(acc_log[-6:-1, 1])
 
@@ -330,7 +329,7 @@ if __name__ == '__main__':
     args = get_args()
     try:
         net, accuracy = train_net(lr=args.lr,
-                                  model_path=args.dir_model,
+                                  fig_path=args.figpath,
                                   momentum=0.9, 
                                   batch_size=args.batch_size, 
                                   dir_img=args.imgs_dir,
