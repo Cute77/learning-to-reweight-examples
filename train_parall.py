@@ -20,8 +20,8 @@ import matplotlib.pyplot as plt
 from tensorboardX import SummaryWriter
 
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-os.environ["CUDA_VISIBLE_DEVICES"] = device_id
-device_ids = list(map(int, device_id.split(',')))
+os.environ["CUDA_VISIBLE_DEVICES"] = args.device_id
+device_ids = list(map(int, args.device_id.split(',')))
 
 '''
 def synchronize():
