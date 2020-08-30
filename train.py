@@ -56,7 +56,6 @@ def build_model(lr):
 
 def train_net(noise_fraction, 
               fig_path,
-              local_rank,
               device_id, 
               lr=1e-3,
               momentum=0.9, 
@@ -67,10 +66,11 @@ def train_net(noise_fraction,
               epochs=10):
 
     # torch.distributed.is_nccl_available()
-    
+
     os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
     os.environ["CUDA_VISIBLE_DEVICES"] = device_id
     device_ids = list(map(int, device_id.split(',')))
+    print(device_ids)
 
     net, opt = build_model(lr)
     net = torch.nn.DataParallel(net, device_ids=device_ids)
@@ -125,16 +125,16 @@ def train_net(noise_fraction,
     global_step = 0
     test_step = 0
 
-    if local_rank == 0:
-        logging.info(f'''Starting training:
-            Epochs:          {epochs}
-            Batch size:      {batch_size}
-            Learning rate:   {lr}
-            Checkpoints:     {save_cp}
-            Noise fraction:  {noise_fraction}
-            Image dir:       {dir_img}
-            Model dir:       {fig_path}
-        ''')
+    logging.info(f'''Starting training:
+        Epochs:          {epochs}
+        Batch size:      {batch_size}
+        Learning rate:   {lr}
+        Checkpoints:     {save_cp}
+        Noise fraction:  {noise_fraction}
+        Image dir:       {dir_img}
+        Model dir:       {fig_path}
+        Device:          {device_id}
+    ''')
 
 
     for epoch in range(epochs):
@@ -345,8 +345,7 @@ if __name__ == '__main__':
                                   save_cp=True,
                                   dir_checkpoint=args.dir_checkpoint,
                                   noise_fraction=args.noise_fraction,
-                                  epochs=args.epochs,
-                                  local_rank=args.local_rank)
+                                  epochs=args.epochs)
         print('Test Accuracy: ', accuracy)
 
     except KeyboardInterrupt:
