@@ -55,7 +55,8 @@ def build_model(lr):
 
 
 def train_net(noise_fraction, 
-              fig_path, 
+              fig_path,
+              device_id, 
               lr=1e-3,
               momentum=0.9, 
               batch_size=128,
@@ -66,13 +67,13 @@ def train_net(noise_fraction,
 
     # torch.distributed.is_nccl_available()
 
-    # os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-    # os.environ["CUDA_VISIBLE_DEVICES"] = device_id
-    # device_ids = list(map(int, device_id.split(',')))
+    os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
+    os.environ["CUDA_VISIBLE_DEVICES"] = device_id
+    device_ids = list(map(int, device_id.split(',')))
     # print(device_ids)
 
     net, opt = build_model(lr)
-    # net = torch.nn.DataParallel(net, device_ids=device_ids)
+    net = torch.nn.DataParallel(net, device_ids=device_ids)
     # num_gpus = int(os.environ["WORLD_SIZE"]) if "WORLD_SIZE" in os.environ else 1
     # is_distributed = num_gpus > 1
 
@@ -154,8 +155,8 @@ def train_net(noise_fraction,
             # since validation data is small I just fixed them instead of building an iterator
             # initialize a dummy network for the meta learning of the weights
             meta_net = model.resnet101(pretrained=True, num_classes=9)
-            #meta_net = torch.nn.DataParallel(meta_net, device_ids=device_ids)
-            meta_net.load_state_dict(net.state_dict())
+            meta_net = torch.nn.DataParallel(meta_net, device_ids=device_ids)
+            meta_net.module.load_state_dict(net.module.state_dict())
 
             if torch.cuda.is_available():
                 meta_net.cuda()
@@ -179,8 +180,8 @@ def train_net(noise_fraction,
             meta_net.zero_grad()
 
             # Line 6 perform a parameter update
-            grads = torch.autograd.grad(l_f_meta, (meta_net.params()), create_graph=True, allow_unused=True)
-            meta_net.update_params(lr, source_params=grads)
+            grads = torch.autograd.grad(l_f_meta, (meta_net.module.params()), create_graph=True, allow_unused=True)
+            meta_net.module.update_params(lr, source_params=grads)
             
             # Line 8 - 10 2nd forward pass and getting the gradients with respect to epsilon
             # with torch.no_grad():
@@ -255,7 +256,7 @@ def train_net(noise_fraction,
                 logging.info('Created checkpoint directory')
             except OSError:
                 pass
-            torch.save(net.state_dict(),
+            torch.save(net.module.state_dict(),
                         dir_checkpoint + f'CP_epoch{epoch + 1}.pth')
             # logging.info(f'Checkpoint {epoch + 1} saved !')
 
@@ -278,7 +279,7 @@ def train_net(noise_fraction,
         acc_test.append(correct_num/test_num)
 
         path = 'baseline/' + fig_path + '_model.pth'
-        torch.save(net.state_dict(), path) 
+        torch.save(net.module.state_dict(), path) 
     
     IPython.display.clear_output()
     fig, axes = plt.subplots(2, 2)
@@ -326,8 +327,8 @@ def get_args():
                         help='checkpoint path', dest='dir_checkpoint')
     parser.add_argument('-f', '--fig-path', metavar='FP', type=str, nargs='?', default='baseline',
                         help='Fig Path', dest='figpath')
-    # parser.add_argument('-d', '--device-id', metavar='DI', type=str, nargs='?', default='0',
-    #                   help='divices tot use', dest='device_id')
+    parser.add_argument('-d', '--device-id', metavar='DI', type=str, nargs='?', default='0',
+                        help='divices tot use', dest='device_id')
 
     return parser.parse_args()
 
@@ -336,7 +337,8 @@ if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s')
     args = get_args()
     try:
-        net, accuracy = train_net(lr=args.lr, 
+        net, accuracy = train_net(lr=args.lr,
+                                  device_id=args.device_id, 
                                   fig_path=args.figpath,
                                   momentum=0.9, 
                                   batch_size=args.batch_size, 
@@ -348,7 +350,7 @@ if __name__ == '__main__':
         print('Test Accuracy: ', accuracy)
 
     except KeyboardInterrupt:
-        torch.save(net.state_dict(), 'INTERRUPTED.pth')
+        torch.save(net.module.state_dict(), 'INTERRUPTED.pth')
         logging.info('Saved interrupt')
         try:
             sys.exit(0)
