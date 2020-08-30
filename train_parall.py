@@ -50,8 +50,8 @@ def build_model(lr):
     net = model.resnet101(pretrained=True, num_classes=9)
 
     if torch.cuda.is_available():
-        net = torch.nn.DataParallel(net, device_ids=device_ids)
         net.cuda()
+        net = torch.nn.DataParallel(net, device_ids=device_ids)
         torch.backends.cudnn.benchmark = True
 
     opt = torch.optim.SGD(net.module.params(), lr, weight_decay=1e-4)
@@ -156,11 +156,11 @@ def train_net(noise_fraction,
             # since validation data is small I just fixed them instead of building an iterator
             # initialize a dummy network for the meta learning of the weights
             meta_net = model.resnet101(pretrained=True, num_classes=9)
-            meta_net = torch.nn.DataParallel(meta_net, device_ids=device_ids)
-            meta_net.module.load_state_dict(net.module.state_dict())
+            meta_net.load_state_dict(net.module.state_dict())
 
             if torch.cuda.is_available():
                 meta_net.cuda()
+                meta_net = torch.nn.DataParallel(meta_net, device_ids=device_ids)
 
             image = to_var(image, requires_grad=False)
             labels = to_var(labels, requires_grad=False)
