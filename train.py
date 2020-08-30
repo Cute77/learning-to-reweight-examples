@@ -155,7 +155,7 @@ def train_net(noise_fraction,
             # since validation data is small I just fixed them instead of building an iterator
             # initialize a dummy network for the meta learning of the weights
             meta_net = model.resnet101(pretrained=True, num_classes=9)
-            meta_net.load_state_dict(net.state_dict())
+            meta_net.module.load_state_dict(net.state_dict())
 
             if torch.cuda.is_available():
                 meta_net.cuda()
