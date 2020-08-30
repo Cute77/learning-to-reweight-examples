@@ -19,7 +19,7 @@ import matplotlib
 import matplotlib.pyplot as plt
 from tensorboardX import SummaryWriter
 
-'''
+
 def synchronize():
     """
     Helper function to synchronize (barrier) among all processes when
@@ -33,7 +33,6 @@ def synchronize():
     if world_size == 1:
         return
     dist.barrier()
-'''
 
 
 def to_var(x, requires_grad=True):
@@ -57,7 +56,6 @@ def build_model(lr):
 def train_net(noise_fraction, 
               fig_path,
               local_rank,
-              device_id, 
               lr=1e-3,
               momentum=0.9, 
               batch_size=128,
@@ -66,18 +64,11 @@ def train_net(noise_fraction,
               dir_checkpoint='checkpoints/ISIC_2019_Training_Input/',
               epochs=10):
 
-    # torch.distributed.is_nccl_available()
-    
-    os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-    os.environ["CUDA_VISIBLE_DEVICES"] = device_id
-    device_ids = list(map(int, device_id.split(',')))
-
+    torch.distributed.is_nccl_available()
     net, opt = build_model(lr)
-    net = torch.nn.DataParallel(net, device_ids=device_ids)
-    # num_gpus = int(os.environ["WORLD_SIZE"]) if "WORLD_SIZE" in os.environ else 1
-    # is_distributed = num_gpus > 1
+    num_gpus = int(os.environ["WORLD_SIZE"]) if "WORLD_SIZE" in os.environ else 1
+    is_distributed = num_gpus > 1
 
-    '''
     if is_distributed:
         torch.cuda.set_device(local_rank)  
         torch.distributed.init_process_group(
@@ -87,7 +78,7 @@ def train_net(noise_fraction,
         net = torch.nn.parallel.DistributedDataParallel(
             net, device_ids=[local_rank], output_device=local_rank,
         )
-    '''
+
     train = BasicDataset(dir_img, noise_fraction, mode='train')
     test = BasicDataset(dir_img, noise_fraction, mode='test')
     val = BasicDataset(dir_img, noise_fraction, mode='val')
@@ -95,13 +86,13 @@ def train_net(noise_fraction,
     # n_train = len(dataset) - n_val
     # train, test = random_split(dataset, [n_train, n_test])
 
-    # train_sampler = distributed.DistributedSampler(train)
-    # test_sampler = distributed.DistributedSampler(test)
-    # val_sampler = distributed.DistributedSampler(val)
+    train_sampler = distributed.DistributedSampler(train)
+    test_sampler = distributed.DistributedSampler(test)
+    val_sampler = distributed.DistributedSampler(val)
 
-    data_loader = DataLoader(train, batch_size=batch_size, shuffle=False, num_workers=8, pin_memory=True)
-    test_loader = DataLoader(test, batch_size=batch_size, shuffle=False, num_workers=8, pin_memory=True)
-    val_loader = DataLoader(val, batch_size=5, shuffle=False, num_workers=8, pin_memory=True)
+    data_loader = DataLoader(train, batch_size=batch_size, shuffle=False, num_workers=8, pin_memory=True, sampler=train_sampler)
+    test_loader = DataLoader(test, batch_size=batch_size, shuffle=False, num_workers=8, pin_memory=True, sampler=test_sampler)
+    val_loader = DataLoader(val, batch_size=5, shuffle=False, num_workers=8, pin_memory=True, sampler=val_sampler)
     
     # data_loader = get_mnist_loader(hyperparameters['batch_size'], classes=[9, 4], proportion=0.995, mode="train")
     # test_loader = get_mnist_loader(hyperparameters['batch_size'], classes=[9, 4], proportion=0.5, mode="test")
@@ -278,8 +269,11 @@ def train_net(noise_fraction,
         acc_test.append(correct_num/test_num)
 
         path = 'baseline/' + fig_path + '_model.pth'
-        torch.save(net.module.state_dict(), path) 
-    
+        if is_distributed and local_rank == 0:
+            torch.save(net.state_dict(), path) 
+        else:
+            torch.save(net.state_dict(), path)   
+
     IPython.display.clear_output()
     fig, axes = plt.subplots(2, 2)
     ax1, ax2, ax3, ax4 = axes.ravel()
@@ -326,8 +320,8 @@ def get_args():
                         help='checkpoint path', dest='dir_checkpoint')
     parser.add_argument('-f', '--fig-path', metavar='FP', type=str, nargs='?', default='baseline',
                         help='Fig Path', dest='figpath')
-    parser.add_argument('-d', '--device-id', metavar='DI', type=str, nargs='?', default='0',
-                        help='divices tot use', dest='device_id')
+    parser.add_argument('-r', '--local_rank', metavar='RA', type=int, nargs='?', default=0,
+                        help='from torch.distributed.launch', dest='local_rank')
 
     return parser.parse_args()
 
@@ -337,7 +331,6 @@ if __name__ == '__main__':
     args = get_args()
     try:
         net, accuracy = train_net(lr=args.lr,
-                                  device_id=args.device_id, 
                                   fig_path=args.figpath,
                                   momentum=0.9, 
                                   batch_size=args.batch_size, 
