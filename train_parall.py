@@ -19,6 +19,10 @@ import matplotlib
 import matplotlib.pyplot as plt
 from tensorboardX import SummaryWriter
 
+os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
+os.environ["CUDA_VISIBLE_DEVICES"] = device_id
+device_ids = list(map(int, device_id.split(',')))
+
 '''
 def synchronize():
     """
@@ -46,6 +50,7 @@ def build_model(lr):
     net = model.resnet101(pretrained=True, num_classes=9)
 
     if torch.cuda.is_available():
+        net = torch.nn.DataParallel(net, device_ids=device_ids)
         net.cuda()
         torch.backends.cudnn.benchmark = True
 
@@ -67,13 +72,9 @@ def train_net(noise_fraction,
 
     # torch.distributed.is_nccl_available()
 
-    os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-    os.environ["CUDA_VISIBLE_DEVICES"] = device_id
-    device_ids = list(map(int, device_id.split(',')))
     # print(device_ids)
 
     net, opt = build_model(lr)
-    net = torch.nn.DataParallel(net, device_ids=device_ids)
     # num_gpus = int(os.environ["WORLD_SIZE"]) if "WORLD_SIZE" in os.environ else 1
     # is_distributed = num_gpus > 1
 
