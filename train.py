@@ -177,11 +177,11 @@ def train_net(noise_fraction,
             # print('eps: ', eps)
             l_f_meta = torch.sum(cost * eps)
 
-            meta_net.zero_grad()
+            meta_net.module.zero_grad()
 
             # Line 6 perform a parameter update
-            grads = torch.autograd.grad(l_f_meta, (meta_net.params()), create_graph=True, allow_unused=True)
-            meta_net.update_params(lr, source_params=grads)
+            grads = torch.autograd.grad(l_f_meta, (meta_net.module.params()), create_graph=True, allow_unused=True)
+            meta_net.module.module.update_params(lr, source_params=grads)
             
             # Line 8 - 10 2nd forward pass and getting the gradients with respect to epsilon
             # with torch.no_grad():
@@ -215,7 +215,7 @@ def train_net(noise_fraction,
 
             # cost = F.binary_cross_entropy_with_logits(y_f_hat, labels, reduce=False)
             l_f = torch.sum(cost * w)
-            net .append(l_f.item())
+            net_losses.append(l_f.item())
             writer.add_scalar('StepLoss/train', l_f.item(), global_step)
             epoch_loss = epoch_loss + l_f.item()
 
@@ -256,7 +256,7 @@ def train_net(noise_fraction,
                 logging.info('Created checkpoint directory')
             except OSError:
                 pass
-            torch.save(net.state_dict(),
+            torch.save(net.module.state_dict(),
                         dir_checkpoint + f'CP_epoch{epoch + 1}.pth')
             # logging.info(f'Checkpoint {epoch + 1} saved !')
 
@@ -350,7 +350,7 @@ if __name__ == '__main__':
         print('Test Accuracy: ', accuracy)
 
     except KeyboardInterrupt:
-        torch.save(net.state_dict(), 'INTERRUPTED.pth')
+        torch.save(net.module.state_dict(), 'INTERRUPTED.pth')
         logging.info('Saved interrupt')
         try:
             sys.exit(0)
