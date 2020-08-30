@@ -70,7 +70,7 @@ def train_net(noise_fraction,
     os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
     os.environ["CUDA_VISIBLE_DEVICES"] = device_id
     device_ids = list(map(int, device_id.split(',')))
-    print(device_ids)
+    # print(device_ids)
 
     net, opt = build_model(lr)
     net = torch.nn.DataParallel(net, device_ids=device_ids)
