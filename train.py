@@ -177,11 +177,11 @@ def train_net(noise_fraction,
             # print('eps: ', eps)
             l_f_meta = torch.sum(cost * eps)
 
-            meta_net.module.zero_grad()
+            meta_net.zero_grad()
 
             # Line 6 perform a parameter update
             grads = torch.autograd.grad(l_f_meta, (meta_net.module.params()), create_graph=True, allow_unused=True)
-            meta_net.module.module.update_params(lr, source_params=grads)
+            meta_net.module.update_params(lr, source_params=grads)
             
             # Line 8 - 10 2nd forward pass and getting the gradients with respect to epsilon
             # with torch.no_grad():
