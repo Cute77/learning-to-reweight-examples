@@ -132,7 +132,6 @@ def train_net(noise_fraction,
         Noise fraction:  {noise_fraction}
         Image dir:       {dir_img}
         Model dir:       {fig_path}
-        Device:          {device_id}
     ''')
 
 
