@@ -77,7 +77,7 @@ def train_net(noise_fraction,
         )
         # synchronize()
         net = torch.nn.parallel.DistributedDataParallel(
-            net, device_ids=[local_rank], output_device=local_rank,
+            net, device_ids=[local_rank], output_device=local_rank, find_unused_parameters=True, 
         )
 
     train = BasicDataset(dir_img, noise_fraction, mode='train')
