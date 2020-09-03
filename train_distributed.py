@@ -45,7 +45,7 @@ def build_model(lr, local_rank):
     net = model.resnet101(pretrained=True, num_classes=9)
 
     if torch.cuda.is_available():
-        net = net.cuda(local_rank[0])
+        net = net.cuda(local_rank)
         torch.backends.cudnn.benchmark = True
 
     opt = torch.optim.SGD(net.params(), lr, weight_decay=1e-4)
