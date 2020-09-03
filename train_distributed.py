@@ -41,11 +41,11 @@ def to_var(x, requires_grad=True):
     return Variable(x, requires_grad=requires_grad)
 
 
-def build_model(lr):
+def build_model(lr, local_rank):
     net = model.resnet101(pretrained=True, num_classes=9)
 
     if torch.cuda.is_available():
-        net.cuda()
+        net = net.cuda(local_rank)
         torch.backends.cudnn.benchmark = True
 
     opt = torch.optim.SGD(net.params(), lr, weight_decay=1e-4)
@@ -65,7 +65,7 @@ def train_net(noise_fraction,
               epochs=10):
 
     torch.distributed.is_nccl_available()
-    net, opt = build_model(lr)
+    net, opt = build_model(lr, local_rank)
     num_gpus = int(os.environ["WORLD_SIZE"]) if "WORLD_SIZE" in os.environ else 1
     is_distributed = num_gpus > 1
     print(local_rank)
