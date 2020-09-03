@@ -68,6 +68,7 @@ def train_net(noise_fraction,
     net, opt = build_model(lr)
     num_gpus = int(os.environ["WORLD_SIZE"]) if "WORLD_SIZE" in os.environ else 1
     is_distributed = num_gpus > 1
+    print(local_rank)
 
     if is_distributed:
         torch.cuda.set_device(local_rank)  
