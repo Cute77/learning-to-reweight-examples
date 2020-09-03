@@ -128,16 +128,16 @@ def train_net(noise_fraction,
             Model dir:       {fig_path}
         ''')
 
-meta_net = model.resnet101(pretrained=True, num_classes=9)
-if is_distributed:
-    torch.cuda.set_device(local_rank)  
-    torch.distributed.init_process_group(
-        backend="nccl", init_method="env://"
-    )
-    # synchronize()
-    meta_net = torch.nn.parallel.DistributedDataParallel(
-        meta_net, device_ids=[local_rank], output_device=local_rank,
-    )
+    meta_net = model.resnet101(pretrained=True, num_classes=9)
+    if is_distributed:
+        torch.cuda.set_device(local_rank)  
+        torch.distributed.init_process_group(
+            backend="nccl", init_method="env://"
+        )
+        # synchronize()
+        meta_net = torch.nn.parallel.DistributedDataParallel(
+            meta_net, device_ids=[local_rank], output_device=local_rank,
+        )
     for epoch in range(epochs):
         epoch_loss = 0
         correct_y = 0
