@@ -138,7 +138,7 @@ def train_net(noise_fraction,
         meta_net = torch.nn.parallel.DistributedDataParallel(
             meta_net, device_ids=[local_rank], output_device=local_rank,
         )
-        
+
     for epoch in range(epochs):
         epoch_loss = 0
         correct_y = 0
@@ -193,7 +193,8 @@ def train_net(noise_fraction,
             grads = torch.autograd.grad(l_f_meta, (meta_net.parameters()), create_graph=True, allow_unused=True)
             for params, grad in zip(meta_net.parameters(), grads):
                 print(params)
-                params -= lr * grad
+                params = params - lr * grad
+                grad.data.zero_()
             # meta_net.update_params(lr, source_params=grads)
             
             # Line 8 - 10 2nd forward pass and getting the gradients with respect to epsilon
