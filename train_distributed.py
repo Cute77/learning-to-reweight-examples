@@ -208,7 +208,7 @@ def train_net(noise_fraction,
             grad_eps = torch.autograd.grad(l_g_meta, eps, only_inputs=True, allow_unused=True)[0]
             
             # Line 11 computing and normalizing the weights
-            w_tilde = torch.clamp(-grad_eps, min=0)
+            w_tilde = torch.clamp(-1*grad_eps, min=0)
             norm_c = torch.sum(w_tilde)
 
             if norm_c != 0:
