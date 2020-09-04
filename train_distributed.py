@@ -92,9 +92,9 @@ def train_net(noise_fraction,
     test_sampler = distributed.DistributedSampler(test)
     val_sampler = distributed.DistributedSampler(val)
 
-    data_loader = DataLoader(train, batch_size=batch_size, shuffle=False, num_workers=1, pin_memory=True, sampler=train_sampler)
-    test_loader = DataLoader(test, batch_size=batch_size, shuffle=False, num_workers=1, pin_memory=True, sampler=test_sampler)
-    val_loader = DataLoader(val, batch_size=5, shuffle=False, num_workers=1, pin_memory=True, sampler=val_sampler)
+    data_loader = DataLoader(train, batch_size=batch_size, shuffle=False, num_workers=8, pin_memory=True, sampler=train_sampler)
+    test_loader = DataLoader(test, batch_size=batch_size, shuffle=False, num_workers=8, pin_memory=True, sampler=test_sampler)
+    val_loader = DataLoader(val, batch_size=5, shuffle=False, num_workers=8, pin_memory=True, sampler=val_sampler)
     
     # data_loader = get_mnist_loader(hyperparameters['batch_size'], classes=[9, 4], proportion=0.995, mode="train")
     # test_loader = get_mnist_loader(hyperparameters['batch_size'], classes=[9, 4], proportion=0.5, mode="test")
