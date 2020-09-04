@@ -191,6 +191,7 @@ def train_net(noise_fraction,
 
             # Line 6 perform a parameter update
             grads = torch.autograd.grad(l_f_meta, (meta_net.parameters()), create_graph=True, allow_unused=True)
+            print(type(grads))
             for params, grad in zip(meta_net.parameters(), grads):
                 # print(params)
                 params = params - lr * grad
