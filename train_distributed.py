@@ -130,11 +130,15 @@ def train_net(noise_fraction,
         ''')
 
     meta_net = models.resnet101(pretrained=True, num_classes=9)
+    if torch.cuda.is_available():
+        meta_net.cuda()
+
     if is_distributed:
         # synchronize()
         meta_net = torch.nn.parallel.DistributedDataParallel(
             meta_net, device_ids=[local_rank], output_device=local_rank,
         )
+        
     for epoch in range(epochs):
         epoch_loss = 0
         correct_y = 0
@@ -166,9 +170,6 @@ def train_net(noise_fraction,
                 )
             '''
             meta_net.load_state_dict(net.state_dict())
-            
-            if torch.cuda.is_available():
-                meta_net.cuda()
 
             image = to_var(image, requires_grad=False)
             labels = to_var(labels, requires_grad=False)
