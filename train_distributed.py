@@ -205,7 +205,7 @@ def train_net(noise_fraction,
             l_g_meta = loss(y_g_hat, val_labels)
             # l_g_meta = F.binary_cross_entropy_with_logits(y_g_hat, val_labels)
 
-            grad_eps = torch.autograd.grad(l_g_meta, eps, only_inputs=True)[0]
+            grad_eps = torch.autograd.grad(l_g_meta, eps, only_inputs=True, allow_unused=True)[0]
             
             # Line 11 computing and normalizing the weights
             w_tilde = torch.clamp(-grad_eps, min=0)
