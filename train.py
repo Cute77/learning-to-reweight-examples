@@ -189,6 +189,7 @@ def train_net(noise_fraction,
             #loss = nn.CrossEntropyLoss()
             l_g_meta = loss(y_g_hat, val_labels)
             print(l_g_meta)
+            print(eps)
             # l_g_meta = F.binary_cross_entropy_with_logits(y_g_hat, val_labels)
 
             grad_eps = torch.autograd.grad(l_g_meta, eps, only_inputs=True)[0]
