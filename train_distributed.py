@@ -131,10 +131,6 @@ def train_net(noise_fraction,
 
     meta_net = models.resnet101(pretrained=True, num_classes=9)
     if is_distributed:
-        torch.cuda.set_device(local_rank)  
-        torch.distributed.init_process_group(
-            backend="nccl", init_method="env://"
-        )
         # synchronize()
         meta_net = torch.nn.parallel.DistributedDataParallel(
             meta_net, device_ids=[local_rank], output_device=local_rank,
