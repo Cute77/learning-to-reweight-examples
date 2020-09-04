@@ -194,7 +194,7 @@ def train_net(noise_fraction,
             # print("grads: ", type(grads))
             for params, grad in zip(meta_net.parameters(), grads):
                 # print(params)
-                params = params - lr * grad
+                params.sub_(lr * grad)
                 # grad.data.zero_()
             # meta_net.update_params(lr, source_params=grads)
             
