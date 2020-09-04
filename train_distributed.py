@@ -2,7 +2,8 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.autograd import Variable
-import model
+# import model
+from torchvision import models
 from tqdm import tqdm
 import IPython
 import gc
@@ -42,13 +43,13 @@ def to_var(x, requires_grad=True):
 
 
 def build_model(lr, local_rank):
-    net = model.resnet101(pretrained=True, num_classes=9)
+    net = models.resnet101(pretrained=True, num_classes=9)
 
     if torch.cuda.is_available():
         net = net.cuda(local_rank)
         torch.backends.cudnn.benchmark = True
 
-    opt = torch.optim.SGD(net.params(), lr, weight_decay=1e-4)
+    opt = torch.optim.SGD(net.parameters(), lr, weight_decay=1e-4)
     
     return net, opt
 
@@ -71,7 +72,7 @@ def train_net(noise_fraction,
     print(local_rank)
 
     if is_distributed:
-        torch.cuda.set_device(local_rank)  
+        torch.cuda.set_device(local_rank) 
         torch.distributed.init_process_group(
             backend="nccl", init_method="env://"
         )
@@ -128,7 +129,7 @@ def train_net(noise_fraction,
             Model dir:       {fig_path}
         ''')
 
-    meta_net = model.resnet101(pretrained=True, num_classes=9)
+    meta_net = models.resnet101(pretrained=True, num_classes=9)
     if is_distributed:
         torch.cuda.set_device(local_rank)  
         torch.distributed.init_process_group(
@@ -192,8 +193,11 @@ def train_net(noise_fraction,
             meta_net.zero_grad()
 
             # Line 6 perform a parameter update
-            grads = torch.autograd.grad(l_f_meta, (meta_net.params()), create_graph=True, allow_unused=True)
-            meta_net.update_params(lr, source_params=grads)
+            grads = torch.autograd.grad(l_f_meta, (meta_net.parameters()), create_graph=True, allow_unused=True)
+            for params, grad in zip(meta_net.parameters(), grads):
+                print(params)
+                params -= lr * grad
+            # meta_net.update_params(lr, source_params=grads)
             
             # Line 8 - 10 2nd forward pass and getting the gradients with respect to epsilon
             # with torch.no_grad():
