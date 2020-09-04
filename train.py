@@ -47,7 +47,7 @@ def build_model(lr):
 
     if torch.cuda.is_available():
         # net.cuda()
-        net = net,cuda()
+        net = net.cuda()
         torch.backends.cudnn.benchmark = True
 
     opt = torch.optim.SGD(net.params(), lr, weight_decay=1e-4)
@@ -191,6 +191,7 @@ def train_net(noise_fraction,
             # l_g_meta = F.binary_cross_entropy_with_logits(y_g_hat, val_labels)
 
             grad_eps = torch.autograd.grad(l_g_meta, eps, only_inputs=True)[0]
+            print(type(grad_eps))
             
             # Line 11 computing and normalizing the weights
             w_tilde = torch.clamp(-grad_eps, min=0)
