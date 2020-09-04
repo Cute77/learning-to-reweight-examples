@@ -192,7 +192,7 @@ def train_net(noise_fraction,
             # Line 6 perform a parameter update
             grads = torch.autograd.grad(l_f_meta, (meta_net.parameters()), create_graph=True, allow_unused=True)
             for params, grad in zip(meta_net.parameters(), grads):
-                print(params)
+                # print(params)
                 params = params - lr * grad
                 grad.data.zero_()
             # meta_net.update_params(lr, source_params=grads)
@@ -206,9 +206,10 @@ def train_net(noise_fraction,
             # l_g_meta = F.binary_cross_entropy_with_logits(y_g_hat, val_labels)
 
             grad_eps = torch.autograd.grad(l_g_meta, eps, only_inputs=True, allow_unused=True)[0]
+            print(type(grad_eps))
             
             # Line 11 computing and normalizing the weights
-            w_tilde = torch.clamp(-1*grad_eps, min=0)
+            w_tilde = torch.clamp(-grad_eps, min=0)
             norm_c = torch.sum(w_tilde)
 
             if norm_c != 0:
