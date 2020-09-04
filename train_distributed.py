@@ -195,7 +195,7 @@ def train_net(noise_fraction,
             for params, grad in zip(meta_net.parameters(), grads):
                 # print(params)
                 params = params - lr * grad
-                grad.data.zero_()
+                # grad.data.zero_()
             # meta_net.update_params(lr, source_params=grads)
             
             # Line 8 - 10 2nd forward pass and getting the gradients with respect to epsilon
