@@ -36,6 +36,19 @@ def synchronize():
     dist.barrier()
 
 
+def set_param(net, curr_mod, name, param):
+        if '.' in name:
+            n = name.split('.')
+            module_name = n[0]
+            rest = '.'.join(n[1:])
+            for name, mod in curr_mod.named_children():
+                if module_name == name:
+                    set_param(net, mod, rest, param)
+                    break
+        else:
+            setattr(curr_mod, name, param)
+
+
 def to_var(x, requires_grad=True):
     if torch.cuda.is_available():
         x = x.cuda()
@@ -192,12 +205,17 @@ def train_net(noise_fraction,
             # Line 6 perform a parameter update
             grads = torch.autograd.grad(l_f_meta, (meta_net.parameters()), create_graph=True, allow_unused=True)
             # print("grads: ", type(grads))
-            with torch.no_grad():
-                for params, grad in zip(meta_net.parameters(), grads):
-                    # print(params)
-                    params -= lr * grad
-                    # grad.data.zero_()
+            # with torch.no_grad():
+            for tgt, src in zip(meta_net.parameters(), grads):
+                name, param = tgt
+                grad = src
+                tmp = param - lr * grad
+                set_param(meta_net, name_t, tmp)
+                # print(params)
+                # params -= lr * grad
+                # grad.data.zero_()
             # meta_net.update_params(lr, source_params=grads)
+
             
             # Line 8 - 10 2nd forward pass and getting the gradients with respect to epsilon
             # with torch.no_grad():
@@ -209,7 +227,7 @@ def train_net(noise_fraction,
             print(eps)
             # l_g_meta = F.binary_cross_entropy_with_logits(y_g_hat, val_labels)
 
-            grad_eps = torch.autograd.grad(l_g_meta, eps, allow_unused=True)[0]
+            grad_eps = torch.autograd.grad(l_g_meta, eps, only_inputs=True, allow_unused=True)[0]
             print("epos: ", type(grad_eps))
             
             # Line 11 computing and normalizing the weights
