@@ -214,7 +214,7 @@ def train_net(noise_fraction,
                 # print(params)
                 # params -= lr * grad
                 # grad.data.zero_()
-            ''''
+            '''
             # meta_net.update_params(lr, source_params=grads)
             for param, grad in zip(meta.net.parameters(), grads):
                 param = param - lr * grad
@@ -359,7 +359,7 @@ def get_args():
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('-e', '--epochs', metavar='E', type=int, default=100,
                         help='Number of epochs', dest='epochs')
-    parser.add_argument('-b', '--batch-size', metavar='B', type=int, nargs='?', default=128,
+    parser.add_argument('-b', '--batch-size', metavar='B', type=int, nargs='?', default=32,
                         help='Batch size', dest='batch_size')
     parser.add_argument('-l', '--learning-rate', metavar='LR', type=float, nargs='?', default=1e-3,
                         help='Learning rate', dest='lr')
