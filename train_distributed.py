@@ -36,17 +36,17 @@ def synchronize():
     dist.barrier()
 
 
-def set_param(net, curr_mod, name, param):
+def set_param(net, name, param):
         if '.' in name:
             n = name.split('.')
             module_name = n[0]
             rest = '.'.join(n[1:])
-            for name, mod in curr_mod.named_children():
+            for name, mod in net.named_children():
                 if module_name == name:
                     set_param(net, mod, rest, param)
                     break
         else:
-            setattr(curr_mod, name, param)
+            setattr(net, name, param)
 
 
 def to_var(x, requires_grad=True):
@@ -206,15 +206,19 @@ def train_net(noise_fraction,
             grads = torch.autograd.grad(l_f_meta, (meta_net.parameters()), create_graph=True, allow_unused=True)
             # print("grads: ", type(grads))
             # with torch.no_grad():
-            for tgt, src in zip(meta_net.parameters(), grads):
+            '''for tgt, src in zip(meta_net.parameters(), grads):
                 name, param = tgt
                 grad = src
                 tmp = param - lr * grad
-                set_param(meta_net, name_t, tmp)
+                set_param(meta_net, name, tmp)
                 # print(params)
                 # params -= lr * grad
                 # grad.data.zero_()
+            ''''
             # meta_net.update_params(lr, source_params=grads)
+            for param, grad in zip(meta.net.parameters(), grads):
+                param = param - lr * grad
+
 
             
             # Line 8 - 10 2nd forward pass and getting the gradients with respect to epsilon

@@ -99,9 +99,9 @@ def train_net(noise_fraction,
     # test_sampler = distributed.DistributedSampler(test)
     # val_sampler = distributed.DistributedSampler(val)
 
-    data_loader = DataLoader(train, batch_size=batch_size, shuffle=False, num_workers=8, pin_memory=True)
-    test_loader = DataLoader(test, batch_size=batch_size, shuffle=False, num_workers=8, pin_memory=True)
-    val_loader = DataLoader(val, batch_size=5, shuffle=False, num_workers=8, pin_memory=True)
+    data_loader = DataLoader(train, batch_size=batch_size, shuffle=False, num_workers=16, pin_memory=True)
+    test_loader = DataLoader(test, batch_size=batch_size, shuffle=False, num_workers=16, pin_memory=True)
+    val_loader = DataLoader(val, batch_size=5, shuffle=False, num_workers=16, pin_memory=True)
     
     # data_loader = get_mnist_loader(hyperparameters['batch_size'], classes=[9, 4], proportion=0.995, mode="train")
     # test_loader = get_mnist_loader(hyperparameters['batch_size'], classes=[9, 4], proportion=0.5, mode="test")
@@ -154,7 +154,7 @@ def train_net(noise_fraction,
             # since validation data is small I just fixed them instead of building an iterator
             # initialize a dummy network for the meta learning of the weights
             meta_net = model.resnet101(pretrained=True, num_classes=9)
-            #meta_net = torch.nn.DataParallel(meta_net, device_ids=device_ids)
+            # meta_net = torch.nn.DataParallel(meta_net, device_ids=device_ids)
             meta_net.load_state_dict(net.state_dict())
 
             if torch.cuda.is_available():
@@ -252,16 +252,6 @@ def train_net(noise_fraction,
                 accuracy_log.append(np.array([i, accuracy])[None])
                 acc_log = np.concatenate(accuracy_log, axis=0)
                 
-        if save_cp:
-            try:
-                os.mkdir(dir_checkpoint)
-                logging.info('Created checkpoint directory')
-            except OSError:
-                pass
-            torch.save(net.state_dict(),
-                        dir_checkpoint + f'CP_epoch{epoch + 1}.pth')
-            # logging.info(f'Checkpoint {epoch + 1} saved !')
-
         print('epoch ', epoch)
 
         print('epoch loss: ', epoch_loss/len(train))
