@@ -189,6 +189,7 @@ def train_net(noise_fraction,
             # meta_net.update_params(lr, source_params=grads)
             count = 0
             for name, param in meta_net.named_parameters():
+                print(name)
                 setattr(meta_net, name, param - lr * grads[count])
                 count += 1
             
