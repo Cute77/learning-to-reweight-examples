@@ -185,10 +185,11 @@ def train_net(noise_fraction,
             eps = torch.ones(cost.size(), requires_grad=True).cuda(local_rank) * 1e-7
             l_f_meta = torch.sum(cost * eps)
             meta_net.zero_grad()
-            grads = torch.autograd.grad(l_f_meta, (meta_net.parameters()), create_graph=True)
+            grads = torch.autograd.grad(l_f_meta, (meta_net.parameters()), create_graph=True, retain_graph=True)
             # meta_net.update_params(lr, source_params=grads)
             for param, grad in zip(meta_net.parameters(), grads):
                 param = param - lr * grad
+            
             y_g_hat = meta_net(val_data)
             
             print(torch.autograd.grad(torch.sum(y_g_hat), eps))
