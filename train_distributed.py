@@ -189,7 +189,7 @@ def train_net(noise_fraction,
             # meta_net.update_params(lr, source_params=grads)
             for param, grad in zip(meta_net.parameters(), grads):
                 param = param - lr * grad
-                print(torch.autograd.grad(param, eps))
+                print(torch.autograd.grad(torch.sum(param), eps))
             y_g_hat = meta_net(val_data)
             #loss = nn.CrossEntropyLoss()
             l_g_meta = torch.mean(loss(y_g_hat, val_labels))
