@@ -1,3 +1,4 @@
+import sys
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -48,20 +49,12 @@ def set_param(net, name, param):
         else:
             setattr(net, name, param)
 
-
-def to_var(x, requires_grad=True):
-    if torch.cuda.is_available():
-        x = x.cuda()
-    return Variable(x, requires_grad=requires_grad)
-
-
 def build_model(lr, local_rank):
     net = models.resnet101(pretrained=True, num_classes=9)
 
     if torch.cuda.is_available():
         net = net.cuda(local_rank)
-        torch.backends.cudnn.benchmark = True
-
+        
     opt = torch.optim.SGD(net.parameters(), lr, weight_decay=1e-4)
     
     return net, opt
@@ -101,20 +94,18 @@ def train_net(noise_fraction,
     # n_train = len(dataset) - n_val
     # train, test = random_split(dataset, [n_train, n_test])
 
-    train_sampler = distributed.DistributedSampler(train)
-    test_sampler = distributed.DistributedSampler(test)
-    val_sampler = distributed.DistributedSampler(val)
+    train_sampler = distributed.DistributedSampler(train, num_replicas=num_gpus, ranks=local_rank) if is_distributed else None
 
     data_loader = DataLoader(train, batch_size=batch_size, shuffle=False, num_workers=8, pin_memory=True, sampler=train_sampler)
-    test_loader = DataLoader(test, batch_size=batch_size, shuffle=False, num_workers=8, pin_memory=True, sampler=test_sampler)
-    val_loader = DataLoader(val, batch_size=5, shuffle=False, num_workers=8, pin_memory=True, sampler=val_sampler)
+    test_loader = DataLoader(test, batch_size=batch_size, shuffle=False, num_workers=8, pin_memory=True)
+    val_loader = DataLoader(val, batch_size=5, shuffle=False, num_workers=8, pin_memory=True)
     
     # data_loader = get_mnist_loader(hyperparameters['batch_size'], classes=[9, 4], proportion=0.995, mode="train")
     # test_loader = get_mnist_loader(hyperparameters['batch_size'], classes=[9, 4], proportion=0.5, mode="test")
 
     val_data, val_labels = next(iter(val_loader))
-    val_data = to_var(val_data, requires_grad=False)
-    val_labels = to_var(val_labels, requires_grad=False)
+    val_data = val_data.cuda(local_rank)
+    val_labels = val_labels.cuda(local_rank)
 
     data = iter(data_loader)
     loss = nn.CrossEntropyLoss()
@@ -144,7 +135,7 @@ def train_net(noise_fraction,
 
     meta_net = models.resnet101(pretrained=True, num_classes=9)
     if torch.cuda.is_available():
-        meta_net.cuda()
+        meta_net.cuda(local_rank)
 
     if is_distributed:
         # synchronize()
@@ -153,13 +144,13 @@ def train_net(noise_fraction,
         )
 
     for epoch in range(epochs):
+        net.train()
         epoch_loss = 0
         correct_y = 0
         num_y = 0
         test_num = 0
         correct_num = 0
         for i in tqdm(range(len(train))):
-            net.train()
             # Line 2 get batch of data
             try:
                 image, labels = next(data)
@@ -184,46 +175,19 @@ def train_net(noise_fraction,
             '''
             meta_net.load_state_dict(net.state_dict())
 
-            image = to_var(image, requires_grad=False)
-            labels = to_var(labels, requires_grad=False)
-
-            # Lines 4 - 5 initial forward pass to compute the initial weighted loss
-            # with torch.no_grad():
-                # print(image.shape)
+            image = image.cuda(local_rank)
+            labels = labels.cuda(local_rank)
             y_f_hat = meta_net(image)
-            
-            # loss = nn.MultiLabelSoftMarginLoss()
             cost = loss(y_f_hat, labels)
-            # cost = F.binary_cross_entropy_with_logits(y_f_hat, labels, reduce=False)
-            # print('cost:', cost)
-            eps = to_var(torch.zeros(cost.size()))
-            # print('eps: ', eps)
+            eps = torch.zeros(cost.size()).cuda(local_rank)
             l_f_meta = torch.sum(cost * eps)
-
             meta_net.zero_grad()
-
-            # Line 6 perform a parameter update
             grads = torch.autograd.grad(l_f_meta, (meta_net.parameters()), create_graph=True, allow_unused=True)
-            # print("grads: ", type(grads))
-            # with torch.no_grad():
-            '''for tgt, src in zip(meta_net.parameters(), grads):
-                name, param = tgt
-                grad = src
-                tmp = param - lr * grad
-                set_param(meta_net, name, tmp)
-                # print(params)
-                # params -= lr * grad
-                # grad.data.zero_()
-            '''
+
             # meta_net.update_params(lr, source_params=grads)
             for param, grad in zip(meta_net.parameters(), grads):
-                param = param - lr * grad
-
-
+                param.sub_(lr * grad)
             
-            # Line 8 - 10 2nd forward pass and getting the gradients with respect to epsilon
-            # with torch.no_grad():
-
             y_g_hat = meta_net(val_data)
             #loss = nn.CrossEntropyLoss()
             l_g_meta = loss(y_g_hat, val_labels)
@@ -232,8 +196,8 @@ def train_net(noise_fraction,
             # l_g_meta = F.binary_cross_entropy_with_logits(y_g_hat, val_labels)
 
             grad_eps = torch.autograd.grad(l_g_meta, eps, only_inputs=True, allow_unused=True)[0]
-            print("epos: ", type(grad_eps))
-            
+            #print("epos: ", type(grad_eps))
+            print(grad_eps)
             # Line 11 computing and normalizing the weights
             w_tilde = torch.clamp(-grad_eps, min=0)
             norm_c = torch.sum(w_tilde)
@@ -373,12 +337,12 @@ def get_args():
                         help='Fig Path', dest='figpath')
     parser.add_argument('-r', '--local_rank', metavar='RA', type=int, nargs='?', default=0,
                         help='from torch.distributed.launch', dest='local_rank')
-
     return parser.parse_args()
 
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s')
+    torch.backends.cudnn.benchmark = True
     args = get_args()
     try:
         net, accuracy = train_net(lr=args.lr,
