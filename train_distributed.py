@@ -21,6 +21,8 @@ import matplotlib
 import matplotlib.pyplot as plt
 from tensorboardX import SummaryWriter
 
+from utils import update_params, set_param
+
 
 def synchronize():
     """
@@ -188,10 +190,7 @@ def train_net(noise_fraction,
             grads = torch.autograd.grad(l_f_meta, (meta_net.parameters()), create_graph=True, retain_graph=True)
             # meta_net.update_params(lr, source_params=grads)
             count = 0
-            for name, param in meta_net.named_parameters():
-                print(name)
-                setattr(meta_net, name, param - lr * grads[count])
-                count += 1
+            update_params(meta_net, lr, meta_net.parameters(), grads)
             
             y_g_hat = meta_net(val_data)
     
