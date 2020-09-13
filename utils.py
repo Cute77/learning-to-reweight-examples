@@ -4,7 +4,6 @@ def update_params(model, lr_inner, parameters, source_params):
         grad = src
         tmp = param_t - lr_inner * grad
         set_param(model, name_t, tmp)
-)
 
 def set_param(curr_mod, name, param):
     
