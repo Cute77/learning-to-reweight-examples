@@ -108,7 +108,7 @@ def train_net(noise_fraction,
     val_labels = val_labels.cuda(local_rank)
 
     data = iter(data_loader)
-    loss = nn.CrossEntropyLoss()
+    loss = nn.CrossEntropyLoss(reduction="none")
     writer = SummaryWriter(comment=f'name_{args.figpath}')
     
     plot_step = 100
