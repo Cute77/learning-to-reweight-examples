@@ -179,7 +179,7 @@ def train_net(noise_fraction,
             labels = labels.cuda(local_rank)
             y_f_hat = meta_net(image)
             cost = loss(y_f_hat, labels)
-            eps = torch.zeros(cost.size()).cuda(local_rank)
+            eps = torch.zeros(cost.size(), requires_grad=True).cuda(local_rank)
             l_f_meta = torch.sum(cost * eps)
             meta_net.zero_grad()
             grads = torch.autograd.grad(l_f_meta, (meta_net.parameters()), create_graph=True, allow_unused=True)
