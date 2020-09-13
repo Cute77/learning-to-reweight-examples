@@ -186,7 +186,7 @@ def train_net(noise_fraction,
 
             # meta_net.update_params(lr, source_params=grads)
             for param, grad in zip(meta_net.parameters(), grads):
-                param.sub_(lr * grad)
+                param.data.sub_(lr * grad)
             
             y_g_hat = meta_net(val_data)
             #loss = nn.CrossEntropyLoss()
