@@ -188,8 +188,8 @@ def train_net(noise_fraction,
             grads = torch.autograd.grad(l_f_meta, (meta_net.parameters()), create_graph=True, retain_graph=True)
             # meta_net.update_params(lr, source_params=grads)
             count = 0
-            for param in meta_net.parameters():
-                setattr(meta_net, param, param - lr * grads[count])
+            for name, param in meta_net.named_parameters():
+                setattr(meta_net, name, param - lr * grads[count])
                 count += 1
             
             y_g_hat = meta_net(val_data)
