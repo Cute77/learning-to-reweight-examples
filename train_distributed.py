@@ -94,7 +94,7 @@ def train_net(noise_fraction,
     # n_train = len(dataset) - n_val
     # train, test = random_split(dataset, [n_train, n_test])
 
-    train_sampler = distributed.DistributedSampler(train, num_replicas=num_gpus, ranks=local_rank) if is_distributed else None
+    train_sampler = distributed.DistributedSampler(train, num_replicas=num_gpus, rank=local_rank) if is_distributed else None
 
     data_loader = DataLoader(train, batch_size=batch_size, shuffle=False, num_workers=8, pin_memory=True, sampler=train_sampler)
     test_loader = DataLoader(test, batch_size=batch_size, shuffle=False, num_workers=8, pin_memory=True)
