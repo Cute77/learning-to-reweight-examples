@@ -21,6 +21,8 @@ import matplotlib
 import matplotlib.pyplot as plt
 from tensorboardX import SummaryWriter
 
+from model import resnet101
+
 from utils import update_params, set_param
 
 
@@ -52,12 +54,12 @@ def set_param(net, name, param):
             setattr(net, name, param)
 
 def build_model(lr, local_rank):
-    net = models.resnet101(pretrained=True, num_classes=9)
+    net = resnet101(pretrained=True, num_classes=9)
 
     if torch.cuda.is_available():
         net = net.cuda(local_rank)
         
-    opt = torch.optim.SGD(net.parameters(), lr, weight_decay=1e-4)
+    opt = torch.optim.SGD(net.params(), lr, weight_decay=1e-4)
     
     return net, opt
 
@@ -135,7 +137,7 @@ def train_net(noise_fraction,
             Model dir:       {fig_path}
         ''')
 
-    meta_net = models.resnet101(pretrained=True, num_classes=9)
+    meta_net = resnet101(pretrained=False, num_classes=9)
     if torch.cuda.is_available():
         meta_net.cuda(local_rank)
 
@@ -188,13 +190,8 @@ def train_net(noise_fraction,
             eps = eps.requires_grad_()
             l_f_meta = torch.sum(cost * eps)
             meta_net.zero_grad()
-            grads = torch.autograd.grad(l_f_meta, (meta_net.parameters()), create_graph=True, retain_graph=True)
-            # meta_net.update_params(lr, source_params=grads)
-            count = 0
-            for param, grad in zip(meta_net.parameters(), grads):
-                param = param - grad * lr
-                param.requires_grad_()
-            
+            grads = torch.autograd.grad(l_f_meta, (meta_net.params()), create_graph=True, retain_graph=True)
+            meta_net.update_params(lr, source_params=grads)
             y_g_hat = meta_net(val_data)
     
             #loss = nn.CrossEntropyLoss()

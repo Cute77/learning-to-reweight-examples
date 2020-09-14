@@ -234,37 +234,6 @@ class LeNet(MetaModule):
         return self.fc_layers(x).squeeze()
 
 
-# class LeNet(MetaModule):
-#     def __init__(self, n_out):
-#         super(LeNet, self).__init__()
-    
-#         layers = []
-#         layers.append(nn.Conv2d(1, 6, kernel_size=5))
-#         layers.append(nn.ReLU(inplace=True))
-#         layers.append(nn.MaxPool2d(kernel_size=2,stride=2))
-
-#         layers.append(nn.Conv2d(6, 16, kernel_size=5))
-#         layers.append(nn.ReLU(inplace=True))
-#         layers.append(nn.MaxPool2d(kernel_size=2,stride=2))
-        
-#         layers.append(nn.Conv2d(16, 120, kernel_size=5))
-#         layers.append(nn.ReLU(inplace=True))
-        
-#         self.main = nn.Sequential(*layers)
-        
-#         layers = []
-#         layers.append(nn.Linear(120, 84))
-#         layers.append(nn.ReLU(inplace=True))
-#         layers.append(nn.Linear(84, n_out))
-        
-#         self.fc_layers = nn.Sequential(*layers)
-        
-#     def forward(self, x):
-#         x = self.main(x)
-#         x = x.view(-1, 120)
-#         return self.fc_layers(x).squeeze()
-
-
 def conv3x3(in_planes, out_planes, stride=1, groups=1, dilation=1):
     """3x3 convolution with padding"""
     return MetaConv2d(in_planes, out_planes, kernel_size=3, stride=stride,
@@ -364,8 +333,7 @@ class Bottleneck(MetaModule):
 
         return out
 
-
-class ResNet(MetaModule):
+class MetaResNet(MetaModule):
 
     def __init__(self, block, layers, num_classes=1000, zero_init_residual=False,
                  groups=1, width_per_group=64, replace_stride_with_dilation=None,
@@ -466,7 +434,7 @@ class ResNet(MetaModule):
 
 
 def _resnet(arch, block, layers, pretrained, progress, **kwargs):
-    model = ResNet(block, layers, **kwargs)
+    model = MetaResNet(block, layers, **kwargs)
     if pretrained:
         state_dict = load_state_dict_from_url(model_urls[arch],
                                               progress=progress)
