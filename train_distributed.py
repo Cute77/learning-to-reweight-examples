@@ -56,9 +56,6 @@ def build_model(lr, local_rank):
 
     if torch.cuda.is_available():
         net = net.cuda(local_rank)
-    for name, p in net.named_parameters(net):
-        print(name)
-        print(p.requires_grad)
     opt = torch.optim.SGD(net.parameters(), lr, weight_decay=1e-4)
     
     return net, opt
@@ -179,6 +176,8 @@ def train_net(noise_fraction,
                     meta_net, device_ids=[local_rank], output_device=local_rank,
                 )
             '''
+            print(meta_net.module.fc)
+            print(net.module.fc)
             meta_net.load_state_dict(net.state_dict())
 
             image = image.cuda(local_rank)
