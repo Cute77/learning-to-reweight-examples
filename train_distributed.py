@@ -53,9 +53,7 @@ def set_param(net, name, param):
 
 def build_model(lr, local_rank):
     net = resnet101(pretrained=True, num_classes=9)
-
-    if torch.cuda.is_available():
-        net = net.cuda(local_rank)
+    net = net.cuda(local_rank)
     opt = torch.optim.SGD(net.parameters(), lr, weight_decay=1e-4)
     
     return net, opt
@@ -136,7 +134,7 @@ def train_net(noise_fraction,
             Model dir:       {fig_path}
         ''')
 
-    meta_net = resnet101(pretrained=False, num_classes=9)
+    meta_net = resnet101(pretrained=True, num_classes=9)
     if torch.cuda.is_available():
         meta_net.cuda(local_rank)
 
@@ -161,8 +159,6 @@ def train_net(noise_fraction,
                 data = iter(data_loader)
                 image, labels = next(data)
 
-            print(net.state_dict()['module.fc.bias'])
-            print(meta_net.state_dict()['module.fc.bias'])
             meta_net.load_state_dict(net.state_dict())
 
             image = image.cuda(local_rank)
