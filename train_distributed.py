@@ -177,9 +177,7 @@ def train_net(noise_fraction,
                 )
             '''
             print(net.state_dict()['module.fc.bias'])
-            print(net.state_dict()['module.fc.weight'])
             print(meta_net.state_dict()['module.fc.bias'])
-            print(meta_net.state_dict()['module.fc.weight'])
             meta_net.load_state_dict(net.state_dict())
 
             image = image.cuda(local_rank)
