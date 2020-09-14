@@ -16,7 +16,7 @@ def set_param(curr_mod, name, param):
                 set_param(mod, rest, param)
                 break
     else:
-        setattr(curr_mod, name, param)
+        setattr(curr_mod, name + '.data', param)
         
 def detach_params(self):
     for name, param in self.named_params(self):
