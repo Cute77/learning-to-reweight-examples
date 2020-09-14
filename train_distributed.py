@@ -87,12 +87,14 @@ def train_net(noise_fraction,
         torch.distributed.init_process_group(
             backend="nccl", init_method="env://"
         )
+        net, opt = build_model(lr, local_rank)
         # synchronize()
         net = torch.nn.parallel.DistributedDataParallel(
             net, device_ids=[local_rank], output_device=local_rank, find_unused_parameters=True, 
         )
-
-    net, opt = build_model(lr, local_rank)
+    else:
+        net, opt = build_model(lr, local_rank)
+    
     train = BasicDataset(dir_img, noise_fraction, mode='train')
     test = BasicDataset(dir_img, noise_fraction, mode='test')
     val = BasicDataset(dir_img, noise_fraction, mode='val')
