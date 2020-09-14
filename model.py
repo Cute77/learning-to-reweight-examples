@@ -32,7 +32,7 @@ def to_var(x, requires_grad=True):
 
 class MetaModule(nn.Module):
     # adopted from: Adrien Ecoffet https://github.com/AdrienLE
-    def parameters(self):
+    def parameters(self, recurse=True):
        for name, param in self.named_parameters(self):
             yield param
     
@@ -42,7 +42,7 @@ class MetaModule(nn.Module):
     def named_submodules(self):
         return []
     
-    def named_parameters(self, curr_module=None, memo=None, prefix=''):       
+    def named_parameters(self, curr_module=None, memo=None, prefix='', recurse=True):       
         if memo is None:
             memo = set()
 
@@ -56,12 +56,12 @@ class MetaModule(nn.Module):
                 if p is not None and p not in memo:
                     memo.add(p)
                     yield prefix + ('.' if prefix else '') + name, p
-                    
-        for mname, module in curr_module.named_children():
-            submodule_prefix = prefix + ('.' if prefix else '') + mname
-            for name, p in self.named_parameters(module, memo, submodule_prefix):
-                yield name, p
-    
+        if recurse: 
+            for mname, module in curr_module.named_children():
+                submodule_prefix = prefix + ('.' if prefix else '') + mname
+                for name, p in self.named_parameters(module, memo, submodule_prefix):
+                    yield name, p
+        
     def update_parameters(self, lr_inner, first_order=False, source_parameters=None, detach=False):
         if source_parameters is not None:
             for tgt, src in zip(self.named_parameters(self), source_parameters):
