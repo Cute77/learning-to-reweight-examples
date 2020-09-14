@@ -60,7 +60,7 @@ def build_model(lr, local_rank):
         net = net.cuda(local_rank)
     for name, p in net.named_params(net):
         print(name)
-        print(p.is_leaf)
+        print(p.requires_grad)
     opt = torch.optim.SGD(net.params(), lr, weight_decay=1e-4)
     
     return net, opt
