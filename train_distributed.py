@@ -58,7 +58,7 @@ def build_model(lr, local_rank):
 
     if torch.cuda.is_available():
         net = net.cuda(local_rank)
-    for name, p in net.named_params():
+    for name, p in net.named_params(net):
         print(name)
         print(p.is_leaf)
     opt = torch.optim.SGD(net.params(), lr, weight_decay=1e-4)
@@ -77,8 +77,7 @@ def train_net(noise_fraction,
               dir_checkpoint='checkpoints/ISIC_2019_Training_Input/',
               epochs=10):
 
-    torch.distributed.is_nccl_available()
-    net, opt = build_model(lr, local_rank)
+    
     num_gpus = int(os.environ["WORLD_SIZE"]) if "WORLD_SIZE" in os.environ else 1
     is_distributed = num_gpus > 1
     print(local_rank)
@@ -93,6 +92,7 @@ def train_net(noise_fraction,
             net, device_ids=[local_rank], output_device=local_rank, find_unused_parameters=True, 
         )
 
+    net, opt = build_model(lr, local_rank)
     train = BasicDataset(dir_img, noise_fraction, mode='train')
     test = BasicDataset(dir_img, noise_fraction, mode='test')
     val = BasicDataset(dir_img, noise_fraction, mode='val')
