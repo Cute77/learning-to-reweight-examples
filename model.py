@@ -32,8 +32,8 @@ def to_var(x, requires_grad=True):
 
 class MetaModule(nn.Module):
     # adopted from: Adrien Ecoffet https://github.com/AdrienLE
-    def params(self):
-       for name, param in self.named_params(self):
+    def parameters(self):
+       for name, param in self.named_parameters(self):
             yield param
     
     def named_leaves(self):
@@ -42,7 +42,7 @@ class MetaModule(nn.Module):
     def named_submodules(self):
         return []
     
-    def named_params(self, curr_module=None, memo=None, prefix=''):       
+    def named_parameters(self, curr_module=None, memo=None, prefix=''):       
         if memo is None:
             memo = set()
 
@@ -59,12 +59,12 @@ class MetaModule(nn.Module):
                     
         for mname, module in curr_module.named_children():
             submodule_prefix = prefix + ('.' if prefix else '') + mname
-            for name, p in self.named_params(module, memo, submodule_prefix):
+            for name, p in self.named_parameters(module, memo, submodule_prefix):
                 yield name, p
     
-    def update_params(self, lr_inner, first_order=False, source_params=None, detach=False):
-        if source_params is not None:
-            for tgt, src in zip(self.named_params(self), source_params):
+    def update_parameters(self, lr_inner, first_order=False, source_parameters=None, detach=False):
+        if source_parameters is not None:
+            for tgt, src in zip(self.named_parameters(self), source_parameters):
                 name_t, param_t = tgt
                 # name_s, param_s = src
                 # grad = param_s.grad
@@ -76,7 +76,7 @@ class MetaModule(nn.Module):
                 self.set_param(self, name_t, tmp)
         else:
 
-            for name, param in self.named_params(self):
+            for name, param in self.named_parameters(self):
                 if not detach:
                     grad = param.grad
                     if first_order:
@@ -99,12 +99,12 @@ class MetaModule(nn.Module):
         else:
             setattr(curr_mod, name, param)
             
-    def detach_params(self):
-        for name, param in self.named_params(self):
+    def detach_parameters(self):
+        for name, param in self.named_parameters(self):
             self.set_param(self, name, param.detach())   
                 
     def copy(self, other, same_var=False):
-        for name, param in other.named_params():
+        for name, param in other.named_parameters():
             if not same_var:
                 param = to_var(param.data.clone(), requires_grad=True)
             self.set_param(name, param)

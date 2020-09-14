@@ -23,7 +23,7 @@ from tensorboardX import SummaryWriter
 
 from model import resnet101
 
-from utils import update_params, set_param
+from utils import update_parameters, set_param
 
 
 def synchronize():
@@ -58,10 +58,10 @@ def build_model(lr, local_rank):
 
     if torch.cuda.is_available():
         net = net.cuda(local_rank)
-    for name, p in net.named_params(net):
+    for name, p in net.named_parameters(net):
         print(name)
         print(p.requires_grad)
-    opt = torch.optim.SGD(net.params(), lr, weight_decay=1e-4)
+    opt = torch.optim.SGD(net.parameters(), lr, weight_decay=1e-4)
     
     return net, opt
 
@@ -194,8 +194,8 @@ def train_net(noise_fraction,
             eps = eps.requires_grad_()
             l_f_meta = torch.sum(cost * eps)
             meta_net.zero_grad()
-            grads = torch.autograd.grad(l_f_meta, (meta_net.params()), create_graph=True, retain_graph=True)
-            meta_net.update_params(lr, source_params=grads)
+            grads = torch.autograd.grad(l_f_meta, (meta_net.parameters()), create_graph=True, retain_graph=True)
+            meta_net.update_parameters(lr, source_parameters=grads)
             y_g_hat = meta_net(val_data)
     
             #loss = nn.CrossEntropyLoss()
