@@ -143,7 +143,7 @@ def train_net(noise_fraction,
     if is_distributed:
         # synchronize()
         meta_net = torch.nn.parallel.DistributedDataParallel(
-            meta_net, device_ids=[local_rank], output_device=local_rank,
+            meta_net, device_ids=[local_rank], output_device=local_rank, find_unused_parameters=True,
         )
 
     for epoch in range(epochs):
@@ -160,22 +160,7 @@ def train_net(noise_fraction,
             except StopIteration:
                 data = iter(data_loader)
                 image, labels = next(data)
-            # image, labels = next(iter(data_loader))
-            # since validation data is small I just fixed them instead of building an iterator
-            # initialize a dummy network for the meta learning of the weights
-            '''
-            meta_net = model.resnet101(pretrained=True, num_classes=9)
 
-            if is_distributed:
-                torch.cuda.set_device(local_rank)  
-                torch.distributed.init_process_group(
-                    backend="nccl", init_method="env://"
-                )
-                # synchronize()
-                meta_net = torch.nn.parallel.DistributedDataParallel(
-                    meta_net, device_ids=[local_rank], output_device=local_rank,
-                )
-            '''
             print(net.state_dict()['module.fc.bias'])
             print(meta_net.state_dict()['module.fc.bias'])
             meta_net.load_state_dict(net.state_dict())
