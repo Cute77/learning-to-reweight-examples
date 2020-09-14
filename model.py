@@ -33,7 +33,7 @@ def to_var(x, requires_grad=True):
 class MetaModule(nn.Module):
     # adopted from: Adrien Ecoffet https://github.com/AdrienLE
     def parameters(self, recurse=True):
-       for name, param in self.named_parameters(self):
+       for name, param in self.named_parameters(self, recurse=recurse):
             yield param
     
     def named_leaves(self):
