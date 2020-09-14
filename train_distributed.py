@@ -23,8 +23,6 @@ from tensorboardX import SummaryWriter
 
 from model import resnet101
 
-from utils import update_parameters, set_param
-
 
 def synchronize():
     """
