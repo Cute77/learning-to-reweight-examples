@@ -193,7 +193,7 @@ def train_net(noise_fraction,
             count = 0
             for param, grad in zip(meta_net.parameters(), grads):
                 param = param - grad * lr
-                params.requires_grad_()
+                param.requires_grad_()
             
             y_g_hat = meta_net(val_data)
     
