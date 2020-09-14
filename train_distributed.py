@@ -138,6 +138,11 @@ def train_net(noise_fraction,
     if torch.cuda.is_available():
         meta_net.cuda(local_rank)
 
+    if is_distributed:
+        meta_net = torch.nn.parallel.DistributedDataParallel(
+            meta_net, device_ids=[local_rank], output_device=local_rank, find_unused_parameters=True,
+        )
+
     for epoch in range(epochs):
         net.train()
         epoch_loss = 0
@@ -167,7 +172,7 @@ def train_net(noise_fraction,
             l_f_meta = torch.sum(cost * eps)
             meta_net.zero_grad()
             grads = torch.autograd.grad(l_f_meta, (meta_net.parameters()), create_graph=True, retain_graph=True)
-            meta_net.update_parameters(lr, source_parameters=grads)
+            meta_net.module.update_parameters(lr, source_parameters=grads)
             y_g_hat = meta_net(val_data)
     
             #loss = nn.CrossEntropyLoss()
