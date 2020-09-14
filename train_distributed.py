@@ -184,7 +184,7 @@ def train_net(noise_fraction,
             
             y_f_hat = meta_net(image)
             cost = loss(y_f_hat, labels)
-            eps = torch.ones(cost.size(), requires_grad=True).cuda(local_rank) * 1e-7
+            eps = torch.ones(cost.size(), requires_grad=True, device='cuda:' + str(local_rank)) * 1e-7
             l_f_meta = torch.sum(cost * eps)
             meta_net.zero_grad()
             grads = torch.autograd.grad(l_f_meta, (meta_net.parameters()), create_graph=True, retain_graph=True)
@@ -200,7 +200,7 @@ def train_net(noise_fraction,
             print(eps)
             # l_g_meta = F.binary_cross_entropy_with_logits(y_g_hat, val_labels)
 
-            grad_eps = torch.autograd.grad(l_g_meta, eps, only_inputs=True, allow_unused=True)[0]
+            grad_eps = torch.autograd.grad(l_g_meta, eps, only_inputs=True)[0]
             #print("epos: ", type(grad_eps))
             print(grad_eps)
             # Line 11 computing and normalizing the weights
