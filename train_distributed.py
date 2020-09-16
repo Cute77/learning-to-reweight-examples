@@ -20,8 +20,9 @@ from torch.utils.data import distributed
 import matplotlib
 import matplotlib.pyplot as plt
 from tensorboardX import SummaryWriter
+import higher 
 
-from model import resnet101
+# from model import resnet101
 
 
 def synchronize():
@@ -39,20 +40,8 @@ def synchronize():
     dist.barrier()
 
 
-def set_param(net, name, param):
-        if '.' in name:
-            n = name.split('.')
-            module_name = n[0]
-            rest = '.'.join(n[1:])
-            for name, mod in net.named_children():
-                if module_name == name:
-                    set_param(net, mod, rest, param)
-                    break
-        else:
-            setattr(net, name, param)
-
 def build_model(lr, local_rank):
-    net = resnet101(pretrained=True, num_classes=9)
+    net = models.resnet101(pretrained=True, num_classes=9)
     net = net.cuda(local_rank)
     opt = torch.optim.SGD(net.parameters(), lr, weight_decay=1e-4)
     
@@ -73,7 +62,7 @@ def train_net(noise_fraction,
     
     num_gpus = int(os.environ["WORLD_SIZE"]) if "WORLD_SIZE" in os.environ else 1
     is_distributed = num_gpus > 1
-    print(local_rank)
+    # print(local_rank)
 
     if is_distributed:
         torch.cuda.set_device(local_rank) 
@@ -119,7 +108,6 @@ def train_net(noise_fraction,
     acc_train = []
     loss_train = []
     plot_step = 100
-    net_l = 0
     global_step = 0
     test_step = 0
 
@@ -134,7 +122,7 @@ def train_net(noise_fraction,
             Model dir:       {fig_path}
         ''')
 
-    meta_net = resnet101(pretrained=True, num_classes=9)
+    meta_net = models.resnet101(pretrained=True, num_classes=9)
     if torch.cuda.is_available():
         meta_net.cuda(local_rank)
 
@@ -158,33 +146,36 @@ def train_net(noise_fraction,
                 data = iter(data_loader)
                 image, labels = next(data)
 
-            meta_net.load_state_dict(net.state_dict())
+            # meta_net.load_state_dict(net.state_dict())
 
             image = image.cuda(local_rank)
             labels = labels.cuda(local_rank)
             image.requires_grad = False
             labels.requires_grad = False
             
-            y_f_hat = meta_net(image)
-            cost = loss(y_f_hat, labels)
-            eps = torch.ones(cost.size()).cuda() * 1e-7
-            eps = eps.requires_grad_()
-            l_f_meta = torch.sum(cost * eps)
-            meta_net.zero_grad()
-            grads = torch.autograd.grad(l_f_meta, (meta_net.parameters()), create_graph=True, retain_graph=True)
-            meta_net.module.update_parameters(lr, source_parameters=grads)
-            y_g_hat = meta_net(val_data)
-    
-            #loss = nn.CrossEntropyLoss()
-            l_g_meta = torch.mean(loss(y_g_hat, val_labels))
-            print(l_g_meta)
-            print(eps)
-            # l_g_meta = F.binary_cross_entropy_with_logits(y_g_hat, val_labels)
+            with higher.innerloop_ctx(net, opt) as (meta_net, meta_opt):
+                y_f_hat = meta_net(image)
+                cost = loss(y_f_hat, labels)
+                eps = torch.zeros(cost.size()).cuda()
+                eps = eps.requires_grad_()
+                l_f_meta = torch.sum(cost * eps)
+                # meta_net.zero_grad()
+                # meta_opt.step(l_f_meta)
+                # grads = torch.autograd.grad(l_f_meta, (meta_net.parameters()), create_graph=True, retain_graph=True)
+                # meta_net.module.update_parameters(lr, source_parameters=grads)
+                y_g_hat = meta_net(val_data)
+        
+                #loss = nn.CrossEntropyLoss()
+                l_g_meta = torch.mean(loss(y_g_hat, val_labels))
+                # print(l_g_meta)
+                # print(eps)
+                # l_g_meta = F.binary_cross_entropy_with_logits(y_g_hat, val_labels)
 
-            grad_eps = torch.autograd.grad(l_g_meta, eps, only_inputs=True)[0]
-            #print("epos: ", type(grad_eps))
-            print(grad_eps)
-            # Line 11 computing and normalizing the weights
+                grad_eps = torch.autograd.grad(l_g_meta, eps, only_inputs=True)[0].detach()
+                #print("epos: ", type(grad_eps))
+                # print(grad_eps)
+                # Line 11 computing and normalizing the weights
+
             w_tilde = torch.clamp(-grad_eps, min=0)
             norm_c = torch.sum(w_tilde)
 
@@ -206,7 +197,7 @@ def train_net(noise_fraction,
 
             # cost = F.binary_cross_entropy_with_logits(y_f_hat, labels, reduce=False)
             l_f = torch.sum(cost * w)
-            net .append(l_f.item())
+            net.append(l_f.item())
             writer.add_scalar('StepLoss/train', l_f.item(), global_step)
             epoch_loss = epoch_loss + l_f.item()
 
