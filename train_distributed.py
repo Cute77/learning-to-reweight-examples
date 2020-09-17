@@ -106,6 +106,8 @@ def train_net(noise_fraction,
     net_losses = []
     acc_test = []
     acc_train = []
+    train_iter = []
+    test_iter = []
     loss_train = []
     plot_step = 100
     global_step = 0
@@ -192,12 +194,13 @@ def train_net(noise_fraction,
             correct_y = correct_y + (y_predicted.int() == labels.int()).sum().item()
             num_y = num_y + labels.size(0) 
             writer.add_scalar('StepAccuracy/train', ((y_predicted.int() == labels.int()).sum().item()/labels.size(0)), global_step)
+            train_iter.append((y_predicted.int() == labels.int()).sum().item())
             
             cost = loss(y_f_hat, labels)
 
             # cost = F.binary_cross_entropy_with_logits(y_f_hat, labels, reduce=False)
             l_f = torch.sum(cost * w)
-            net.append(l_f.item())
+            net_losses.append(l_f.item())
             writer.add_scalar('StepLoss/train', l_f.item(), global_step)
             epoch_loss = epoch_loss + l_f.item()
 
@@ -210,8 +213,10 @@ def train_net(noise_fraction,
 
                 acc = []
                 for i, (test_img, test_label) in enumerate(test_loader):
-                    test_img = to_var(test_img, requires_grad=False)
-                    test_label = to_var(test_label, requires_grad=False)
+                    test_img = test_img.cuda(local_rank)
+                    test_label = test_label.cuda(local_rank)
+                    test_img.requires_grad = False
+                    test_label.requires_grad = False
 
                     with torch.no_grad():
                         output = net(test_img)
@@ -224,8 +229,9 @@ def train_net(noise_fraction,
                     # print(type((predicted == test_label).float()))
                     test_num = test_num + test_label.size(0)
                     correct_num = correct_num + (predicted.int() == test_label.int()).sum().item()
-                    acc.append((predicted.int() == test_label.int()).float())
+                    # acc.append((predicted.int() == test_label.int()).float())
                     writer.add_scalar('StepAccuracy/test', ((predicted.int() == test_label.int()).sum().item()/test_label.size(0)), test_step)
+                    test_iter.append((predicted.int() == test_label.int()).sum().item())
                     test_step = test_step + 1
 
                 accuracy = torch.cat(acc, dim=0).mean()
@@ -267,7 +273,7 @@ def train_net(noise_fraction,
             torch.save(net.state_dict(), path)   
 
     IPython.display.clear_output()
-    fig, axes = plt.subplots(2, 2)
+    fig, axes = plt.subplots(2, 3)
     ax1, ax2, ax3, ax4 = axes.ravel()
 
     ax1.plot(net_losses, label='train_losses')
@@ -280,15 +286,25 @@ def train_net(noise_fraction,
     ax2.set_xlabel('Epoch')
     ax2.legend()
 
-    ax3.plot(acc_train, label='acc_train')
-    ax3.set_ylabel('Accuracy/train')
+    ax3.plot(acc_train, label='acc_train_epoch')
+    ax3.set_ylabel('Accuracy/trainEpoch')
     ax3.set_xlabel('Epoch')
     ax3.legend()
 
-    ax4.plot(acc_test, label='acc_test')
-    ax4.set_ylabel('Accuracy/test')
-    ax4.set_xlabel('Epoch')
+    ax4.plot(train_iter, label='acc_train_iteration')
+    ax4.set_ylabel('Accuracy/trainIteration')
+    ax4.set_xlabel('Iteration')
     ax4.legend()
+
+    ax5.plot(acc_test, label='acc_test_epoch')
+    ax5.set_ylabel('Accuracy/testEpoch')
+    ax5.set_xlabel('Epoch')
+    ax5.legend()
+
+    ax6.plot(test_iter, label='acc_train_iteration')
+    ax6.set_ylabel('Accuracy/trainIteration')
+    ax6.set_xlabel('Iteration')
+    ax6.legend()
 
     plt.savefig(fig_path+'.png')
         # return accuracy
