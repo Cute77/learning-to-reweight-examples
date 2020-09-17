@@ -304,7 +304,7 @@ def train_net(noise_fraction,
 
     plt.savefig(fig_path+'.png')
         # return accuracy
-    return net, np.mean(acc_log[-6:-1, 1])
+    return net
 
 
 def get_args():
@@ -334,7 +334,7 @@ if __name__ == '__main__':
     torch.backends.cudnn.benchmark = True
     args = get_args()
     try:
-        net, accuracy = train_net(lr=args.lr,
+        net = train_net(lr=args.lr,
                                   fig_path=args.figpath,
                                   momentum=0.9, 
                                   batch_size=args.batch_size, 
