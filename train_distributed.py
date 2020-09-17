@@ -179,6 +179,7 @@ def train_net(noise_fraction,
                 # Line 11 computing and normalizing the weights
 
             w_tilde = torch.clamp(-grad_eps, min=0)
+            print(w_tilde)
             norm_c = torch.sum(w_tilde)
 
             if norm_c != 0:
@@ -211,7 +212,6 @@ def train_net(noise_fraction,
             if i % plot_step == 0:
                 net.eval()
 
-                acc = []
                 for i, (test_img, test_label) in enumerate(test_loader):
                     test_img = test_img.cuda(local_rank)
                     test_label = test_label.cuda(local_rank)
