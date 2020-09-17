@@ -233,10 +233,6 @@ def train_net(noise_fraction,
                     writer.add_scalar('StepAccuracy/test', ((predicted.int() == test_label.int()).sum().item()/test_label.size(0)), test_step)
                     test_iter.append((predicted.int() == test_label.int()).sum().item())
                     test_step = test_step + 1
-
-                accuracy = torch.cat(acc, dim=0).mean()
-                accuracy_log.append(np.array([i, accuracy])[None])
-                acc_log = np.concatenate(accuracy_log, axis=0)
                 
         if save_cp:
             try:
@@ -274,7 +270,7 @@ def train_net(noise_fraction,
 
     IPython.display.clear_output()
     fig, axes = plt.subplots(2, 3)
-    ax1, ax2, ax3, ax4 = axes.ravel()
+    ax1, ax2, ax3, ax4, ax5, ax6 = axes.ravel()
 
     ax1.plot(net_losses, label='train_losses')
     ax1.set_ylabel("Losses")
