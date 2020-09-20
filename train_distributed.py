@@ -179,7 +179,7 @@ def train_net(noise_fraction,
                 # Line 11 computing and normalizing the weights
 
             w_tilde = torch.clamp(-grad_eps, min=0)
-            print(w_tilde)
+            # print(w_tilde)
             norm_c = torch.sum(w_tilde)
 
             if norm_c != 0:
