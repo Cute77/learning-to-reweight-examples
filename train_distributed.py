@@ -62,7 +62,6 @@ def train_net(noise_fraction,
     
     num_gpus = int(os.environ["WORLD_SIZE"]) if "WORLD_SIZE" in os.environ else 1
     is_distributed = num_gpus > 1
-    print(num_gpus)
     lr = lr * num_gpus
     # print(local_rank)
 
