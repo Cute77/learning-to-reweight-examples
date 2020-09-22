@@ -62,6 +62,8 @@ def train_net(noise_fraction,
     
     num_gpus = int(os.environ["WORLD_SIZE"]) if "WORLD_SIZE" in os.environ else 1
     is_distributed = num_gpus > 1
+    print(num_gpus)
+    lr = lr * num_gpus
     # print(local_rank)
 
     if is_distributed:
@@ -86,9 +88,9 @@ def train_net(noise_fraction,
 
     train_sampler = distributed.DistributedSampler(train, num_replicas=num_gpus, rank=local_rank) if is_distributed else None
 
-    data_loader = DataLoader(train, batch_size=batch_size, shuffle=False, num_workers=8, pin_memory=True, sampler=train_sampler)
-    test_loader = DataLoader(test, batch_size=batch_size, shuffle=False, num_workers=8, pin_memory=True)
-    val_loader = DataLoader(val, batch_size=5, shuffle=False, num_workers=8, pin_memory=True)
+    data_loader = DataLoader(train, batch_size=batch_size, shuffle=False, num_workers=4, pin_memory=True, sampler=train_sampler)
+    test_loader = DataLoader(test, batch_size=batch_size, shuffle=False, num_workers=4, pin_memory=True)
+    val_loader = DataLoader(val, batch_size=5, shuffle=False, num_workers=4, pin_memory=True)
     
     # data_loader = get_mnist_loader(hyperparameters['batch_size'], classes=[9, 4], proportion=0.995, mode="train")
     # test_loader = get_mnist_loader(hyperparameters['batch_size'], classes=[9, 4], proportion=0.5, mode="test")
@@ -102,7 +104,6 @@ def train_net(noise_fraction,
     writer = SummaryWriter(comment=f'name_{args.figpath}')
     
     plot_step = 100
-    accuracy_log = []
     net_losses = []
     acc_test = []
     acc_train = []
@@ -115,6 +116,7 @@ def train_net(noise_fraction,
 
     if local_rank == 0:
         logging.info(f'''Starting training:
+            Devices:         {num_gpus}
             Epochs:          {epochs}
             Batch size:      {batch_size}
             Learning rate:   {lr}
@@ -233,17 +235,7 @@ def train_net(noise_fraction,
                     writer.add_scalar('StepAccuracy/test', ((predicted.int() == test_label.int()).sum().item()/test_label.size(0)), test_step)
                     test_iter.append((predicted.int() == test_label.int()).sum().item())
                     test_step = test_step + 1
-                
-        if save_cp:
-            try:
-                os.mkdir(dir_checkpoint)
-                logging.info('Created checkpoint directory')
-            except OSError:
-                pass
-            torch.save(net.state_dict(),
-                        dir_checkpoint + f'CP_epoch{epoch + 1}.pth')
-            # logging.info(f'Checkpoint {epoch + 1} saved !')
-
+        '''
         print('epoch ', epoch)
 
         print('epoch loss: ', epoch_loss/len(train))
@@ -261,12 +253,40 @@ def train_net(noise_fraction,
         print('test accuracy: ', correct_num/test_num)
         writer.add_scalar('EpochAccuracy/test', correct_num/test_num, epoch)
         acc_test.append(correct_num/test_num)
+        '''
 
         path = 'baseline/' + fig_path + '_model.pth'
         if is_distributed and local_rank == 0:
             torch.save(net.state_dict(), path) 
+            print('epoch ', epoch)
+
+            print('epoch loss: ', epoch_loss/len(train))
+            loss_train.append(epoch_loss/len(train))
+            writer.add_scalar('EpochLoss/train', epoch_loss/len(train), epoch)
+
+            print('epoch accuracy: ', correct_y/num_y)
+            acc_train.append(correct_y/num_y)
+            writer.add_scalar('EpochAccuracy/train', correct_y/num_y, epoch)
+
+            print('test accuracy: ', correct_num/test_num)
+            writer.add_scalar('EpochAccuracy/test', correct_num/test_num, epoch)
+            acc_test.append(correct_num/test_num)
+
         else:
-            torch.save(net.state_dict(), path)   
+            torch.save(net.state_dict(), path)
+            print('epoch ', epoch)
+
+            print('epoch loss: ', epoch_loss/len(train))
+            loss_train.append(epoch_loss/len(train))
+            writer.add_scalar('EpochLoss/train', epoch_loss/len(train), epoch)
+
+            print('epoch accuracy: ', correct_y/num_y)
+            acc_train.append(correct_y/num_y)
+            writer.add_scalar('EpochAccuracy/train', correct_y/num_y, epoch)
+
+            print('test accuracy: ', correct_num/test_num)
+            writer.add_scalar('EpochAccuracy/test', correct_num/test_num, epoch)
+            acc_test.append(correct_num/test_num)   
 
     IPython.display.clear_output()
     fig, axes = plt.subplots(2, 3)
@@ -344,7 +364,7 @@ if __name__ == '__main__':
                                   noise_fraction=args.noise_fraction,
                                   epochs=args.epochs,
                                   local_rank=args.local_rank)
-        print('Test Accuracy: ', accuracy)
+        # print('Test Accuracy: ', accuracy)
 
     except KeyboardInterrupt:
         torch.save(net.state_dict(), 'INTERRUPTED.pth')
