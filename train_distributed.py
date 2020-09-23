@@ -87,9 +87,9 @@ def train_net(noise_fraction,
 
     train_sampler = distributed.DistributedSampler(train, num_replicas=num_gpus, rank=local_rank) if is_distributed else None
 
-    data_loader = DataLoader(train, batch_size=batch_size, shuffle=False, num_workers=4, pin_memory=True, sampler=train_sampler)
-    test_loader = DataLoader(test, batch_size=batch_size, shuffle=False, num_workers=4, pin_memory=True)
-    val_loader = DataLoader(val, batch_size=5, shuffle=False, num_workers=4, pin_memory=True)
+    data_loader = DataLoader(train, batch_size=batch_size, shuffle=False, num_workers=0, pin_memory=True, sampler=train_sampler)
+    test_loader = DataLoader(test, batch_size=batch_size, shuffle=False, num_workers=0, pin_memory=True)
+    val_loader = DataLoader(val, batch_size=5, shuffle=False, num_workers=0, pin_memory=True)
     
     # data_loader = get_mnist_loader(hyperparameters['batch_size'], classes=[9, 4], proportion=0.995, mode="train")
     # test_loader = get_mnist_loader(hyperparameters['batch_size'], classes=[9, 4], proportion=0.5, mode="test")
@@ -141,7 +141,7 @@ def train_net(noise_fraction,
         num_y = 0
         test_num = 0
         correct_num = 0
-        for i in tqdm(range(len(train))):
+        for i in range(len(train)):
             # Line 2 get batch of data
             try:
                 image, labels = next(data)
@@ -257,6 +257,7 @@ def train_net(noise_fraction,
         path = 'baseline/' + fig_path + '_model.pth'
         if is_distributed and local_rank == 0:
             torch.save(net.state_dict(), path) 
+            print('local_rank: ', local_rank)
             print('epoch ', epoch)
 
             print('epoch loss: ', epoch_loss/len(train))
