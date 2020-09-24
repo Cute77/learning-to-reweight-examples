@@ -22,8 +22,6 @@ import matplotlib.pyplot as plt
 from tensorboardX import SummaryWriter
 import higher 
 
-# from model import resnet101
-
 
 def synchronize():
     """
