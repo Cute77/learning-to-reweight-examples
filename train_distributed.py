@@ -87,9 +87,9 @@ def train_net(noise_fraction,
 
     train_sampler = distributed.DistributedSampler(train, num_replicas=num_gpus, rank=local_rank) if is_distributed else None
 
-    data_loader = DataLoader(train, batch_size=batch_size, shuffle=False, num_workers=0, pin_memory=True, sampler=train_sampler)
-    test_loader = DataLoader(test, batch_size=batch_size, shuffle=False, num_workers=0, pin_memory=True)
-    val_loader = DataLoader(val, batch_size=5, shuffle=False, num_workers=0, pin_memory=True)
+    data_loader = DataLoader(train, batch_size=batch_size, shuffle=False, num_workers=8, pin_memory=True, sampler=train_sampler)
+    test_loader = DataLoader(test, batch_size=batch_size, shuffle=False, num_workers=8, pin_memory=True)
+    val_loader = DataLoader(val, batch_size=5, shuffle=False, num_workers=8, pin_memory=True)
     
     # data_loader = get_mnist_loader(hyperparameters['batch_size'], classes=[9, 4], proportion=0.995, mode="train")
     # test_loader = get_mnist_loader(hyperparameters['batch_size'], classes=[9, 4], proportion=0.5, mode="test")
@@ -272,7 +272,7 @@ def train_net(noise_fraction,
             writer.add_scalar('EpochAccuracy/test', correct_num/test_num, epoch)
             acc_test.append(correct_num/test_num)
 
-        else:
+        if not is_distributed:
             torch.save(net.state_dict(), path)
             print('epoch ', epoch)
 
