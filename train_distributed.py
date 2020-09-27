@@ -219,31 +219,31 @@ def train_net(noise_fraction,
             l_f.backward()
             opt.step()
             
-        if i % plot_step == 0:
-            net.eval()
+            if i % plot_step == 0:
+                net.eval()
 
-            for m, (test_img, test_label) in enumerate(test_loader):
-                test_img = test_img.cuda(local_rank)
-                test_label = test_label.cuda(local_rank)
-                test_img.requires_grad = False
-                test_label.requires_grad = False
+                for m, (test_img, test_label) in enumerate(test_loader):
+                    test_img = test_img.cuda(local_rank)
+                    test_label = test_label.cuda(local_rank)
+                    test_img.requires_grad = False
+                    test_label.requires_grad = False
 
-                with torch.no_grad():
-                    output = net(test_img)
-                _, predicted = torch.max(output, 1)
-                # print(type(predicted))
-                # predicted = to_var(predicted, requires_grad=False)
-                # print(type(predicted))
-                # test_label = test_label.float()
+                    with torch.no_grad():
+                        output = net(test_img)
+                    _, predicted = torch.max(output, 1)
+                    # print(type(predicted))
+                    # predicted = to_var(predicted, requires_grad=False)
+                    # print(type(predicted))
+                    # test_label = test_label.float()
 
-                # print(type((predicted == test_label).float()))
-                test_num = test_num + test_label.size(0)
-                print(test_num)
-                correct_num = correct_num + (predicted.int() == test_label.int()).sum().item()
-                # acc.append((predicted.int() == test_label.int()).float())
-                writer.add_scalar('StepAccuracy/test', ((predicted.int() == test_label.int()).sum().item()/test_label.size(0)), test_step)
-                test_iter.append((predicted.int() == test_label.int()).sum().item())
-                test_step = test_step + 1
+                    # print(type((predicted == test_label).float()))
+                    test_num = test_num + test_label.size(0)
+                    print(test_num)
+                    correct_num = correct_num + (predicted.int() == test_label.int()).sum().item()
+                    # acc.append((predicted.int() == test_label.int()).float())
+                    writer.add_scalar('StepAccuracy/test', ((predicted.int() == test_label.int()).sum().item()/test_label.size(0)), test_step)
+                    test_iter.append((predicted.int() == test_label.int()).sum().item())
+                    test_step = test_step + 1
         '''
         print('epoch ', epoch)
 
