@@ -55,26 +55,42 @@ def train_net(noise_fraction,
               dir_img='ISIC_2019_Training_Input/',
               save_cp=True,
               dir_checkpoint='checkpoints/ISIC_2019_Training_Input/',
-              epochs=10):
+              epochs=10, 
+              load=True):
 
     
     num_gpus = int(os.environ["WORLD_SIZE"]) if "WORLD_SIZE" in os.environ else 1
     is_distributed = num_gpus > 1
     lr = lr * num_gpus
-    # print(local_rank)
-
+    
+    path = 'baseline/' + fig_path + '_model.pth'
     if is_distributed:
         torch.cuda.set_device(local_rank) 
         torch.distributed.init_process_group(
             backend="nccl", init_method="env://"
         )
-        net, opt = build_model(lr, local_rank)
+        if os.path.isfile(path):
+            net = models.resnet101(pretrained=True, num_classes=9)
+            net.load_state_dict(torch.load(path))
+            net = net.cuda(local_rank)
+            opt = torch.optim.SGD(net.parameters(), lr, weight_decay=1e-4)
+        else:
+            net, opt = build_model(lr, local_rank)    
+        # net, opt = build_model(lr, local_rank)
         # synchronize()
         net = torch.nn.parallel.DistributedDataParallel(
             net, device_ids=[local_rank], output_device=local_rank, find_unused_parameters=True, 
         )
     else:
-        net, opt = build_model(lr, local_rank)
+        if os.path.isfile(path):
+            logging.info(f'''Continue''')
+            net = models.resnet101(pretrained=True, num_classes=9)
+            net.load_state_dict(torch.load(path))
+            net = net.cuda(local_rank)
+            opt = torch.optim.SGD(net.parameters(), lr, weight_decay=1e-4)
+        else:
+            net, opt = build_model(lr, local_rank)    
+        # net, opt = build_model(lr, local_rank)
     
     train = BasicDataset(dir_img, noise_fraction, mode='train')
     test = BasicDataset(dir_img, noise_fraction, mode='test')
