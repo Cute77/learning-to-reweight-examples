@@ -117,7 +117,6 @@ def train_net(noise_fraction,
     train_iter = []
     test_iter = []
     loss_train = []
-    plot_step = 100
     global_step = 0
     test_step = 0
 
