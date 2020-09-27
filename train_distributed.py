@@ -82,7 +82,7 @@ def train_net(noise_fraction,
         net, opt = build_model(lr, local_rank)
         if os.path.isfile(path):
             logging.info(f'''Continue''')
-            net.load_state_dict(torch.load(path)）
+            net.load_state_dict(torch.load(path))
         # net, opt = build_model(lr, local_rank)
     
     train = BasicDataset(dir_img, noise_fraction, mode='train')
