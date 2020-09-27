@@ -58,7 +58,6 @@ def train_net(noise_fraction,
               epochs=10, 
               load=True):
 
-    
     num_gpus = int(os.environ["WORLD_SIZE"]) if "WORLD_SIZE" in os.environ else 1
     is_distributed = num_gpus > 1
     lr = lr * num_gpus
@@ -80,14 +79,10 @@ def train_net(noise_fraction,
             net.load_state_dict(torch.load(path))
 
     else:
+        net, opt = build_model(lr, local_rank)
         if os.path.isfile(path):
             logging.info(f'''Continue''')
-            net = models.resnet101(pretrained=True, num_classes=9)
-            net.load_state_dict(torch.load(path))
-            net = net.cuda(local_rank)
-            opt = torch.optim.SGD(net.parameters(), lr, weight_decay=1e-4)
-        else:
-            net, opt = build_model(lr, local_rank)    
+            net.load_state_dict(torch.load(path)）
         # net, opt = build_model(lr, local_rank)
     
     train = BasicDataset(dir_img, noise_fraction, mode='train')
@@ -153,7 +148,7 @@ def train_net(noise_fraction,
         num_y = 0
         test_num = 0
         correct_num = 0
-        for i in range(len(train)):
+        for i in range(len(data_loader)):
             # Line 2 get batch of data
             try:
                 image, labels = next(data)
@@ -222,30 +217,30 @@ def train_net(noise_fraction,
             l_f.backward()
             opt.step()
             
-            if i % plot_step == 0:
-                net.eval()
+        net.eval()
 
-                for i, (test_img, test_label) in enumerate(test_loader):
-                    test_img = test_img.cuda(local_rank)
-                    test_label = test_label.cuda(local_rank)
-                    test_img.requires_grad = False
-                    test_label.requires_grad = False
+        for i, (test_img, test_label) in enumerate(test_loader):
+            test_img = test_img.cuda(local_rank)
+            test_label = test_label.cuda(local_rank)
+            test_img.requires_grad = False
+            test_label.requires_grad = False
 
-                    with torch.no_grad():
-                        output = net(test_img)
-                    _, predicted = torch.max(output, 1)
-                    # print(type(predicted))
-                    # predicted = to_var(predicted, requires_grad=False)
-                    # print(type(predicted))
-                    # test_label = test_label.float()
+            with torch.no_grad():
+                output = net(test_img)
+            _, predicted = torch.max(output, 1)
+            # print(type(predicted))
+            # predicted = to_var(predicted, requires_grad=False)
+            # print(type(predicted))
+            # test_label = test_label.float()
 
-                    # print(type((predicted == test_label).float()))
-                    test_num = test_num + test_label.size(0)
-                    correct_num = correct_num + (predicted.int() == test_label.int()).sum().item()
-                    # acc.append((predicted.int() == test_label.int()).float())
-                    writer.add_scalar('StepAccuracy/test', ((predicted.int() == test_label.int()).sum().item()/test_label.size(0)), test_step)
-                    test_iter.append((predicted.int() == test_label.int()).sum().item())
-                    test_step = test_step + 1
+            # print(type((predicted == test_label).float()))
+            test_num = test_num + test_label.size(0)
+            correct_num = correct_num + (predicted.int() == test_label.int()).sum().item()
+            # acc.append((predicted.int() == test_label.int()).float())
+            writer.add_scalar('StepAccuracy/test', ((predicted.int() == test_label.int()).sum().item()/test_label.size(0)), test_step)
+            test_iter.append((predicted.int() == test_label.int()).sum().item())
+            test_step = test_step + 1
+
         '''
         print('epoch ', epoch)
 
