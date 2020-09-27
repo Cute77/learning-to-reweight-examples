@@ -56,14 +56,14 @@ def train_net(noise_fraction,
               save_cp=True,
               dir_checkpoint='checkpoints/ISIC_2019_Training_Input/',
               epochs=10, 
-              load=True):
+              load=0):
 
     
     num_gpus = int(os.environ["WORLD_SIZE"]) if "WORLD_SIZE" in os.environ else 1
     is_distributed = num_gpus > 1
     lr = lr * num_gpus
     
-    path = 'baseline/' + fig_path + '_model.pth'
+    path = 'baseline/' + fig_path + '_' + str(load) + '_model.pth'
     if is_distributed:
         torch.cuda.set_device(local_rank) 
         torch.distributed.init_process_group(
@@ -83,7 +83,7 @@ def train_net(noise_fraction,
         net, opt = build_model(lr, local_rank)
         if os.path.isfile(path):
             logging.info(f'''Continue''')
-            net.load_state_dict(torch.load(path)）
+            net.load_state_dict(torch.load(path))
         # net, opt = build_model(lr, local_rank)
     
     train = BasicDataset(dir_img, noise_fraction, mode='train')
@@ -262,7 +262,7 @@ def train_net(noise_fraction,
         acc_test.append(correct_num/test_num)
         '''
 
-        path = 'baseline/' + fig_path + '_model.pth'
+        path = 'baseline/' + fig_path + '_' + str(epoch) + '_model.pth'
         if is_distributed and local_rank == 0:
             torch.save(net.state_dict(), path) 
             print('local_rank: ', local_rank)
@@ -354,6 +354,8 @@ def get_args():
                         help='Fig Path', dest='figpath')
     parser.add_argument('-r', '--local_rank', metavar='RA', type=int, nargs='?', default=0,
                         help='from torch.distributed.launch', dest='local_rank')
+    parser.add_argument('-l', '--load', metavar='LO', type=int, nargs='?', default=0,
+                        help='load epoch', dest='load')
     return parser.parse_args()
 
 
@@ -371,7 +373,8 @@ if __name__ == '__main__':
                                   dir_checkpoint=args.dir_checkpoint,
                                   noise_fraction=args.noise_fraction,
                                   epochs=args.epochs,
-                                  local_rank=args.local_rank)
+                                  local_rank=args.local_rank, 
+                                  load = args.load)
         # print('Test Accuracy: ', accuracy)
 
     except KeyboardInterrupt:
