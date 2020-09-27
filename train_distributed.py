@@ -238,7 +238,7 @@ def train_net(noise_fraction,
 
                     # print(type((predicted == test_label).float()))
                     test_num = test_num + test_label.size(0)
-                    print(test_num)
+                    # print(test_num)
                     correct_num = correct_num + (predicted.int() == test_label.int()).sum().item()
                     # acc.append((predicted.int() == test_label.int()).float())
                     writer.add_scalar('StepAccuracy/test', ((predicted.int() == test_label.int()).sum().item()/test_label.size(0)), test_step)
