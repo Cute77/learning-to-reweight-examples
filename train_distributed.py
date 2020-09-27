@@ -68,19 +68,17 @@ def train_net(noise_fraction,
         torch.cuda.set_device(local_rank) 
         torch.distributed.init_process_group(
             backend="nccl", init_method="env://"
-        )
-        if os.path.isfile(path):
-            net = models.resnet101(pretrained=True, num_classes=9)
-            net.load_state_dict(torch.load(path))
-            net = net.cuda(local_rank)
-            opt = torch.optim.SGD(net.parameters(), lr, weight_decay=1e-4)
-        else:
-            net, opt = build_model(lr, local_rank)    
+        )    
         # net, opt = build_model(lr, local_rank)
         # synchronize()
+        net, opt = build_model(lr, local_rank)
         net = torch.nn.parallel.DistributedDataParallel(
             net, device_ids=[local_rank], output_device=local_rank, find_unused_parameters=True, 
         )
+        if os.path.isfile(path):
+            logging.info(f'''Continue''')
+            net.load_state_dict(torch.load(path))
+
     else:
         if os.path.isfile(path):
             logging.info(f'''Continue''')
