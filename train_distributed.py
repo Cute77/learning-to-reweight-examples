@@ -149,8 +149,8 @@ def train_net(noise_fraction,
         test_num = 0
         correct_num = 0
         for i in range(len(data_loader)):
-            print('train: ', len(train))
-            print(len(data_loader))
+            # print('train: ', len(train))
+            # print(len(data_loader))
             # Line 2 get batch of data
             try:
                 image, labels = next(data)
