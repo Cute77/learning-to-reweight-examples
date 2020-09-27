@@ -354,7 +354,7 @@ def get_args():
                         help='Fig Path', dest='figpath')
     parser.add_argument('-r', '--local_rank', metavar='RA', type=int, nargs='?', default=0,
                         help='from torch.distributed.launch', dest='local_rank')
-    parser.add_argument('-l', '--load', metavar='LO', type=int, nargs='?', default=0,
+    parser.add_argument('-o', '--load', metavar='LO', type=int, nargs='?', default=0,
                         help='load epoch', dest='load')
     return parser.parse_args()
 
