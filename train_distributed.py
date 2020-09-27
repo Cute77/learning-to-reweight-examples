@@ -110,7 +110,7 @@ def train_net(noise_fraction,
     loss = nn.CrossEntropyLoss(reduction="none")
     writer = SummaryWriter(comment=f'name_{args.figpath}')
     
-    plot_step = 100
+    plot_step = 10
     net_losses = []
     acc_test = []
     acc_train = []
