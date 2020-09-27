@@ -149,6 +149,7 @@ def train_net(noise_fraction,
         test_num = 0
         correct_num = 0
         for i in range(len(data_loader)):
+            print(len(data_loader))
             # Line 2 get batch of data
             try:
                 image, labels = next(data)
@@ -220,7 +221,7 @@ def train_net(noise_fraction,
         if i % plot_step == 0:
             net.eval()
 
-            for i, (test_img, test_label) in enumerate(test_loader):
+            for m, (test_img, test_label) in enumerate(test_loader):
                 test_img = test_img.cuda(local_rank)
                 test_label = test_label.cuda(local_rank)
                 test_img.requires_grad = False
