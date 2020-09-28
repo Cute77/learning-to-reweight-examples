@@ -270,9 +270,9 @@ def train_net(noise_fraction,
             print('local_rank: ', local_rank)
             print('epoch ', epoch)
 
-            print('epoch loss: ', epoch_loss/len(train))
-            loss_train.append(epoch_loss/len(train))
-            writer.add_scalar('EpochLoss/train', epoch_loss/len(train), epoch)
+            print('epoch loss: ', epoch_loss/len(data_loader))
+            loss_train.append(epoch_loss/len(data_loader))
+            writer.add_scalar('EpochLoss/train', epoch_loss/len(data_loader), epoch)
 
             print('epoch accuracy: ', correct_y/num_y)
             acc_train.append(correct_y/num_y)
@@ -286,9 +286,9 @@ def train_net(noise_fraction,
             torch.save(net.state_dict(), path)
             print('epoch ', epoch)
 
-            print('epoch loss: ', epoch_loss/len(train))
+            print('epoch loss: ', epoch_loss/len(data_loader))
             loss_train.append(epoch_loss/len(train))
-            writer.add_scalar('EpochLoss/train', epoch_loss/len(train), epoch)
+            writer.add_scalar('EpochLoss/train', epoch_loss/len(data_loader), epoch)
 
             print('epoch accuracy: ', correct_y/num_y)
             acc_train.append(correct_y/num_y)
