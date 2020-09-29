@@ -32,8 +32,8 @@ def to_var(x, requires_grad=True):
 
 class MetaModule(nn.Module):
     # adopted from: Adrien Ecoffet https://github.com/AdrienLE
-    def parameters(self, recurse=True):
-       for name, param in self.named_parameters(self, recurse=recurse):
+    def params(self, recurse=True):
+       for name, param in self.named_params(self, recurse=recurse):
             yield param
     
     def named_leaves(self):
@@ -42,7 +42,7 @@ class MetaModule(nn.Module):
     def named_submodules(self):
         return []
     
-    def named_parameters(self, curr_module=None, memo=None, prefix='', recurse=True):       
+    def named_params(self, curr_module=None, memo=None, prefix='', recurse=True):       
         if memo is None:
             memo = set()
 
@@ -62,9 +62,9 @@ class MetaModule(nn.Module):
                 for name, p in self.named_parameters(module, memo, submodule_prefix):
                     yield name, p
         
-    def update_parameters(self, lr_inner, first_order=False, source_parameters=None, detach=False):
+    def update_params(self, lr_inner, first_order=False, source_params=None, detach=False):
         if source_parameters is not None:
-            for tgt, src in zip(self.named_parameters(self), source_parameters):
+            for tgt, src in zip(self.named_params(self), source_params):
                 name_t, param_t = tgt
                 # name_s, param_s = src
                 # grad = param_s.grad
@@ -76,7 +76,7 @@ class MetaModule(nn.Module):
                 self.set_param(self, name_t, tmp)
         else:
 
-            for name, param in self.named_parameters(self):
+            for name, param in self.named_params(self):
                 if not detach:
                     grad = param.grad
                     if first_order:
@@ -104,7 +104,7 @@ class MetaModule(nn.Module):
             self.set_param(self, name, param.detach())   
                 
     def copy(self, other, same_var=False):
-        for name, param in other.named_parameters():
+        for name, param in other.named_params():
             if not same_var:
                 param = to_var(param.data.clone(), requires_grad=True)
             self.set_param(name, param)
