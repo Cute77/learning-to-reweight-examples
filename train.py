@@ -111,7 +111,7 @@ def train_net(noise_fraction,
     val_labels = to_var(val_labels, requires_grad=False)
 
     data = iter(data_loader)
-    loss = nn.CrossEntropyLoss()
+    loss = nn.CrossEntropyLoss(reduction="none")
     writer = SummaryWriter(comment=f'name_{args.figpath}')
     
     plot_step = 100
@@ -142,7 +142,7 @@ def train_net(noise_fraction,
         num_y = 0
         test_num = 0
         correct_num = 0
-        for i in tqdm(range(len(train))):
+        for i in tqdm(range(len(data_loader))):
             net.train()
             # Line 2 get batch of data
             try:
@@ -187,13 +187,13 @@ def train_net(noise_fraction,
 
             y_g_hat = meta_net(val_data)
             #loss = nn.CrossEntropyLoss()
-            l_g_meta = loss(y_g_hat, val_labels)
-            print(l_g_meta)
-            print(eps)
+            l_g_meta = torch.mean(loss(y_g_hat, val_labels))
+            # print(l_g_meta)
+            # print(eps)
             # l_g_meta = F.binary_cross_entropy_with_logits(y_g_hat, val_labels)
 
             grad_eps = torch.autograd.grad(l_g_meta, eps, only_inputs=True)[0]
-            print(type(grad_eps))
+            # print(type(grad_eps))
             
             # Line 11 computing and normalizing the weights
             w_tilde = torch.clamp(-grad_eps, min=0)
@@ -254,9 +254,9 @@ def train_net(noise_fraction,
                 
         print('epoch ', epoch)
 
-        print('epoch loss: ', epoch_loss/len(train))
-        loss_train.append(epoch_loss/len(train))
-        writer.add_scalar('EpochLoss/train', epoch_loss/len(train), epoch)
+        print('epoch loss: ', epoch_loss/len(data_loader))
+        loss_train.append(epoch_loss/len(data_loader))
+        writer.add_scalar('EpochLoss/train', epoch_loss/len(data_loader), epoch)
 
         print('epoch accuracy: ', correct_y/num_y)
         acc_train.append(correct_y/num_y)
