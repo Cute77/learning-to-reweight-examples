@@ -59,11 +59,11 @@ class MetaModule(nn.Module):
         if recurse: 
             for mname, module in curr_module.named_children():
                 submodule_prefix = prefix + ('.' if prefix else '') + mname
-                for name, p in self.named_parameters(module, memo, submodule_prefix):
+                for name, p in self.named_params(module, memo, submodule_prefix):
                     yield name, p
         
     def update_params(self, lr_inner, first_order=False, source_params=None, detach=False):
-        if source_parameters is not None:
+        if source_params is not None:
             for tgt, src in zip(self.named_params(self), source_params):
                 name_t, param_t = tgt
                 # name_s, param_s = src
@@ -99,8 +99,8 @@ class MetaModule(nn.Module):
         else:
             setattr(curr_mod, name, param)
             
-    def detach_parameters(self):
-        for name, param in self.named_parameters(self):
+    def detach_params(self):
+        for name, param in self.named_params(self):
             self.set_param(self, name, param.detach())   
                 
     def copy(self, other, same_var=False):
