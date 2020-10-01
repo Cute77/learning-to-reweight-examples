@@ -147,7 +147,7 @@ def train_net(noise_fraction,
             with higher.innerloop_ctx(net, opt) as (meta_net, meta_opt):
                 y_f_hat = meta_net(image)            
                 cost = loss(y_f_hat, labels)
-                eps = torch.zeros(cost.size())
+                eps = torch.zeros(cost.size()).cuda()
                 eps = eps.requires_grad_()
                 l_f_meta = torch.sum(cost * eps)
                 meta_opt.step(l_f_meta)
