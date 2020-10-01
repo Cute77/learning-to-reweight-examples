@@ -20,6 +20,7 @@ import matplotlib
 import matplotlib.pyplot as plt
 from tensorboardX import SummaryWriter
 import sys
+import higher
 
 '''
 def synchronize():
