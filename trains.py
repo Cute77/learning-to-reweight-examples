@@ -2,7 +2,8 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.autograd import Variable
-import model
+# import model
+from torchvision import models
 from tqdm import tqdm
 import IPython
 import gc
@@ -44,14 +45,14 @@ def to_var(x, requires_grad=True):
 
 
 def build_model(lr):
-    net = model.resnet101(pretrained=True, num_classes=9)
+    net = models.resnet101(pretrained=True, num_classes=9)
 
     if torch.cuda.is_available():
         # net.cuda()
         net = net.cuda()
-        torch.backends.cudnn.benchmark = True
+        # torch.backends.cudnn.benchmark = True
 
-    opt = torch.optim.SGD(net.params(), lr, weight_decay=1e-4)
+    opt = torch.optim.SGD(net.parameters(), lr, weight_decay=1e-4)
     
     return net, opt
 
@@ -74,21 +75,7 @@ def train_net(noise_fraction,
     # print(device_ids)
 
     net, opt = build_model(lr)
-    # net = torch.nn.DataParallel(net, device_ids=device_ids)
-    # num_gpus = int(os.environ["WORLD_SIZE"]) if "WORLD_SIZE" in os.environ else 1
-    # is_distributed = num_gpus > 1
 
-    '''
-    if is_distributed:
-        torch.cuda.set_device(local_rank)  
-        torch.distributed.init_process_group(
-            backend="nccl", init_method="env://"
-        )
-        synchronize()
-        net = torch.nn.parallel.DistributedDataParallel(
-            net, device_ids=[local_rank], output_device=local_rank,
-        )
-    '''
     train = BasicDataset(dir_img, noise_fraction, mode='train')
     test = BasicDataset(dir_img, noise_fraction, mode='test')
     val = BasicDataset(dir_img, noise_fraction, mode='val')
@@ -108,8 +95,8 @@ def train_net(noise_fraction,
     # test_loader = get_mnist_loader(hyperparameters['batch_size'], classes=[9, 4], proportion=0.5, mode="test")
 
     val_data, val_labels = next(iter(val_loader))
-    val_data = to_var(val_data, requires_grad=False)
-    val_labels = to_var(val_labels, requires_grad=False)
+    val_data = val_data.cuda()
+    val_labels = val_labels.cuda()
 
     data = iter(data_loader)
     loss = nn.CrossEntropyLoss(reduction="none")
@@ -121,7 +108,6 @@ def train_net(noise_fraction,
     acc_test = []
     acc_train = []
     loss_train = []
-    plot_step = 100
     net_l = 0
     global_step = 0
     test_step = 0
@@ -151,50 +137,24 @@ def train_net(noise_fraction,
             except StopIteration:
                 data = iter(data_loader)
                 image, labels = next(data)
-            # image, labels = next(iter(data_loader))
-            # since validation data is small I just fixed them instead of building an iterator
-            # initialize a dummy network for the meta learning of the weights
-            meta_net = model.resnet101(pretrained=True, num_classes=9)
-            # meta_net = torch.nn.DataParallel(meta_net, device_ids=device_ids)
-            meta_net.load_state_dict(net.state_dict())
 
-            if torch.cuda.is_available():
-                meta_net.cuda()
+            image = image.cuda()
+            labels = labels.cuda()
+            image.requires_grad = False
+            labels.requires_grad = False
 
-            image = to_var(image, requires_grad=False)
-            labels = to_var(labels, requires_grad=False)
+            with higher.innerloop_ctx(net, opt) as (meta_net, meta_opt):
+                y_f_hat = meta_net(image)            
+                cost = loss(y_f_hat, labels)
+                eps = torch.zeros(cost.size())
+                eps = eps.requires_grad_()
+                l_f_meta = torch.sum(cost * eps)
+                meta_opt.step(l_f_meta)
 
-            # Lines 4 - 5 initial forward pass to compute the initial weighted loss
-            # with torch.no_grad():
-                # print(image.shape)
-            y_f_hat = meta_net(image)
-            
-            # loss = nn.MultiLabelSoftMarginLoss()
-            cost = loss(y_f_hat, labels)
-            # cost = F.binary_cross_entropy_with_logits(y_f_hat, labels, reduce=False)
-            # print('cost:', cost)
-            eps = to_var(torch.zeros(cost.size()))
-            # print('eps: ', eps)
-            l_f_meta = torch.sum(cost * eps)
-
-            meta_net.zero_grad()
-
-            # Line 6 perform a parameter update
-            grads = torch.autograd.grad(l_f_meta, (meta_net.params()), create_graph=True, allow_unused=True)
-            meta_net.update_params(lr, source_params=grads)
-            
-            # Line 8 - 10 2nd forward pass and getting the gradients with respect to epsilon
-            # with torch.no_grad():
-
-            y_g_hat = meta_net(val_data)
-            #loss = nn.CrossEntropyLoss()
-            l_g_meta = torch.mean(loss(y_g_hat, val_labels))
-            # print(l_g_meta)
-            # print(eps)
-            # l_g_meta = F.binary_cross_entropy_with_logits(y_g_hat, val_labels)
-
-            grad_eps = torch.autograd.grad(l_g_meta, eps, only_inputs=True)[0]
-            # print(type(grad_eps))
+                y_g_hat = meta_net(val_data)
+                l_g_meta = torch.mean(loss(y_g_hat, val_labels))
+                grad_eps = torch.autograd.grad(l_g_meta, eps, only_inputs=True)[0]
+                # print(type(grad_eps))
             
             # Line 11 computing and normalizing the weights
             w_tilde = torch.clamp(-grad_eps, min=0)
@@ -230,7 +190,7 @@ def train_net(noise_fraction,
                 net.eval()
 
                 acc = []
-                for i, (test_img, test_label) in enumerate(test_loader):
+                for m, (test_img, test_label) in enumerate(test_loader):
                     test_img = to_var(test_img, requires_grad=False)
                     test_label = to_var(test_label, requires_grad=False)
 
@@ -248,10 +208,6 @@ def train_net(noise_fraction,
                     acc.append((predicted.int() == test_label.int()).float())
                     writer.add_scalar('StepAccuracy/test', ((predicted.int() == test_label.int()).sum().item()/test_label.size(0)), test_step)
                     test_step = test_step + 1
-
-                # accuracy = torch.cat(acc, dim=0).mean()
-                # accuracy_log.append(np.array([i, accuracy])[None])
-                # acc_log = np.concatenate(accuracy_log, axis=0)
                 
         print('epoch ', epoch)
 
@@ -339,7 +295,6 @@ if __name__ == '__main__':
                                   dir_checkpoint=args.dir_checkpoint,
                                   noise_fraction=args.noise_fraction,
                                   epochs=args.epochs)
-        # print('Test Accuracy: ', accuracy)
 
     except KeyboardInterrupt:
         torch.save(net.state_dict(), 'INTERRUPTED.pth')
