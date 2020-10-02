@@ -130,6 +130,7 @@ def train_net(noise_fraction,
             Noise fraction:  {noise_fraction}
             Image dir:       {dir_img}
             Model dir:       {fig_path}
+            From epoch:      {load}
         ''')
 
     meta_net = models.resnet101(pretrained=True, num_classes=9)
@@ -141,7 +142,7 @@ def train_net(noise_fraction,
             meta_net, device_ids=[local_rank], output_device=local_rank, find_unused_parameters=True,
         )
 
-    for epoch in range(epochs):
+    for epoch in range(load+1, epochs):
         net.train()
         epoch_loss = 0
         correct_y = 0
@@ -267,7 +268,7 @@ def train_net(noise_fraction,
         if is_distributed and local_rank == 0 and epoch % 10 == 0:
             path = 'baseline/' + fig_path + '_' + str(epoch) + '_model.pth'
             torch.save(net.state_dict(), path) 
-            
+
         if is_distributed and local_rank == 0:
             # torch.save(net.state_dict(), path) 
             print('local_rank: ', local_rank)
