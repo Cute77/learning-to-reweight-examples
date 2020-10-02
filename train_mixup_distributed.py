@@ -188,29 +188,32 @@ def train_net(noise_fraction,
                 # print(grad_eps)
                 # Line 11 computing and normalizing the weights
 
-            w_tilde = torch.clamp(-grad_eps, min=0)
+            beta_tilde = torch.clamp(-grad_eps, min=0)
             # print(w_tilde)
-            norm_c = torch.sum(w_tilde)
+            norm_c = torch.sum(beta_tilde)
 
             if norm_c != 0:
-                w = w_tilde / norm_c
+                beta = beta_tilde / norm_c
             else:
-                w = w_tilde
+                beta = beta_tilde
 
             # Lines 12 - 14 computing for the loss with the computed weights
             # and then perform a parameter update
             # with torch.no_grad():
             y_f_hat = net(image)
+            
             _, y_predicted = torch.max(y_f_hat, 1)
             correct_y = correct_y + (y_predicted.int() == labels.int()).sum().item()
             num_y = num_y + labels.size(0) 
             writer.add_scalar('StepAccuracy/train', ((y_predicted.int() == labels.int()).sum().item()/labels.size(0)), global_step)
             train_iter.append((y_predicted.int() == labels.int()).sum().item())
             
-            cost = loss(y_f_hat, labels)
+            prob = nn.softmax(y_f_hat)
+            mixup_labels = beta * mixup_labels + (1-beta) * prob
+            cost = loss(mixup_labels, labels)
 
             # cost = F.binary_cross_entropy_with_logits(y_f_hat, labels, reduce=False)
-            l_f = torch.sum(cost * w)
+            l_f = torch.sum(cost * beta)
             net_losses.append(l_f.item())
             writer.add_scalar('StepLoss/train', l_f.item(), global_step)
             epoch_loss = epoch_loss + l_f.item()
@@ -263,8 +266,10 @@ def train_net(noise_fraction,
         writer.add_scalar('EpochAccuracy/test', correct_num/test_num, epoch)
         acc_test.append(correct_num/test_num)
         '''
+        if is_distributed and local_rank == 0 and epoch % 10 == 0:
+            path = 'baseline/' + fig_path + '_' + str(epoch) + '_model.pth'
+            torch.save(net.state_dict(), path) 
 
-        path = 'baseline/' + fig_path + '_' + str(epoch) + '_model.pth'
         if is_distributed and local_rank == 0:
             torch.save(net.state_dict(), path) 
             print('local_rank: ', local_rank)
