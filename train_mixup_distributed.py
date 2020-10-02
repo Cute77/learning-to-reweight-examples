@@ -130,6 +130,7 @@ def train_net(noise_fraction,
             Noise fraction:  {noise_fraction}
             Image dir:       {dir_img}
             Model dir:       {fig_path}
+            From epoch:      {load}
         ''')
 
     meta_net = models.resnet101(pretrained=True, num_classes=9)
@@ -141,7 +142,7 @@ def train_net(noise_fraction,
             meta_net, device_ids=[local_rank], output_device=local_rank, find_unused_parameters=True,
         )
 
-    for epoch in range(epochs):
+    for epoch in range(load+1, epochs):
         net.train()
         epoch_loss = 0
         correct_y = 0
@@ -201,7 +202,7 @@ def train_net(noise_fraction,
             # and then perform a parameter update
             # with torch.no_grad():
             y_f_hat = net(image)
-            
+
             _, y_predicted = torch.max(y_f_hat, 1)
             correct_y = correct_y + (y_predicted.int() == labels.int()).sum().item()
             num_y = num_y + labels.size(0) 
