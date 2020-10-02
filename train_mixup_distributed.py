@@ -264,12 +264,9 @@ def train_net(noise_fraction,
         acc_test.append(correct_num/test_num)
         '''
 
-        if is_distributed and local_rank == 0 and epoch % 10 == 0:
-            path = 'baseline/' + fig_path + '_' + str(epoch) + '_model.pth'
-            torch.save(net.state_dict(), path) 
-            
+        path = 'baseline/' + fig_path + '_' + str(epoch) + '_model.pth'
         if is_distributed and local_rank == 0:
-            # torch.save(net.state_dict(), path) 
+            torch.save(net.state_dict(), path) 
             print('local_rank: ', local_rank)
             print('epoch ', epoch)
 
