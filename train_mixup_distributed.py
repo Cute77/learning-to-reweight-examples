@@ -126,6 +126,8 @@ def train_net(noise_fraction,
     loss_train = []
     global_step = 0
     test_step = 0
+    _, mixup_labels = next(data)
+    mixup_labels = mixup_labels.cuda(local_rank)
 
     if local_rank == 0:
         logging.info(f'''Starting training:
