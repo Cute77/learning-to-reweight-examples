@@ -22,7 +22,7 @@ import matplotlib.pyplot as plt
 from tensorboardX import SummaryWriter
 import higher 
 
-# CUDA_VISIBEL_DEVICES=4,5
+os.environ["CUDA_VISIBEL_DEVICES"] = 4,5
 
 
 def synchronize():

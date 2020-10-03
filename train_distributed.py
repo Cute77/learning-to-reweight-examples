@@ -22,6 +22,7 @@ import matplotlib.pyplot as plt
 from tensorboardX import SummaryWriter
 import higher 
 
+CUDA_VISIBEL_DEVICES=0, 1, 2, 3
 
 def synchronize():
     """
