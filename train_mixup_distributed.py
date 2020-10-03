@@ -22,6 +22,8 @@ import matplotlib.pyplot as plt
 from tensorboardX import SummaryWriter
 import higher 
 
+CUDA_VISIBEL_DEVICES=4,5
+
 
 def synchronize():
     """
@@ -66,6 +68,7 @@ def train_net(noise_fraction,
     path = 'baseline/' + fig_path + '_' + str(load) + '_model.pth'
     if is_distributed:
         torch.cuda.set_device(local_rank) 
+        print("local_rank:", local_rank)
         torch.distributed.init_process_group(
             backend="nccl", init_method="env://"
         )    
