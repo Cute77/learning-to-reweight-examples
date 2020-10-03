@@ -224,11 +224,13 @@ def train_net(noise_fraction,
             writer.add_scalar('StepAccuracy/train', ((y_predicted.int() == labels.int()).sum().item()/labels.size(0)), global_step)
             train_iter.append((y_predicted.int() == labels.int()).sum().item())
             
-            beta = beta.repeat(9, 1)
+            # beta = beta.repeat(9, 1)
             prob = nn.functional.softmax(y_f_hat)
             prob = prob.cuda(local_rank)
             beta = beta.cuda(local_rank)
+            print(prob)
             print(prob.size())
+            print(beta)
             print(beta.size())
             mixup_labels = beta * mixup_labels + (1-beta) * prob
             cost = loss(mixup_labels, labels)
