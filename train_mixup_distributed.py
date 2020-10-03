@@ -222,7 +222,7 @@ def train_net(noise_fraction,
             writer.add_scalar('StepAccuracy/train', ((y_predicted.int() == labels.int()).sum().item()/labels.size(0)), global_step)
             train_iter.append((y_predicted.int() == labels.int()).sum().item())
             
-            prob = nn.softmax(y_f_hat)
+            prob = nn.Softmax(y_f_hat)
             mixup_labels = beta * mixup_labels + (1-beta) * prob
             cost = loss(mixup_labels, labels)
 
@@ -304,7 +304,7 @@ def train_net(noise_fraction,
         if not is_distributed and epoch % 5 == 0:
             path = 'baseline/' + fig_path + '_' + str(epoch) + '_model.pth'
             torch.save(net.state_dict(), path)
-            
+
         if not is_distributed:
             # torch.save(net.state_dict(), path)
             print('epoch ', epoch)
