@@ -232,6 +232,7 @@ def train_net(noise_fraction,
             print(prob.size())
             # print(beta)
             print(beta.size())
+            print(mixup_labels.size())
             mixup_labels = beta * mixup_labels + (1-beta) * prob
             cost = loss(mixup_labels, labels)
 
