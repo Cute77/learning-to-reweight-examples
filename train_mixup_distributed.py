@@ -224,7 +224,7 @@ def train_net(noise_fraction,
             writer.add_scalar('StepAccuracy/train', ((y_predicted.int() == labels.int()).sum().item()/labels.size(0)), global_step)
             train_iter.append((y_predicted.int() == labels.int()).sum().item())
             
-            beta = beta.view(1, -1).repeat(1, 9)
+            beta = beta.repeat(1, 9)
             prob = nn.functional.softmax(y_f_hat)
             prob = prob.cuda(local_rank)
             beta = beta.cuda(local_rank)
