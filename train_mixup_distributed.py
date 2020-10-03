@@ -228,9 +228,9 @@ def train_net(noise_fraction,
             prob = nn.functional.softmax(y_f_hat)
             prob = prob.cuda(local_rank)
             beta = beta.cuda(local_rank)
-            print(prob)
+            # print(prob)
             print(prob.size())
-            print(beta)
+            # print(beta)
             print(beta.size())
             mixup_labels = beta * mixup_labels + (1-beta) * prob
             cost = loss(mixup_labels, labels)
