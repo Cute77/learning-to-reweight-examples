@@ -224,7 +224,7 @@ def train_net(noise_fraction,
             train_iter.append((y_predicted.int() == labels.int()).sum().item())
             
             beta = beta.repeat(9, 1).view(32, 9)
-            prob = nn.functional.softmax(y_f_hat)
+            prob = nn.functional.softmax(y_f_hat, dim=1)
             prob = prob.cuda(local_rank)
             beta = beta.cuda(local_rank)
             # print(prob)
