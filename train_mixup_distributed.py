@@ -236,9 +236,9 @@ def train_net(noise_fraction,
             mixup_labels = beta * mixup_labels + (1-beta) * prob
             # cost = loss(y_f_hat, mixup_labels)
             cost = torch.mean(torch.log(y_f_hat+1e-10)*mixup_labels)
-
+            w = torch.ones(cost.size()).cuda(local_rank)
             # cost = F.binary_cross_entropy_with_logits(y_f_hat, labels, reduce=False)
-            l_f = torch.sum(cost * 1)
+            l_f = torch.sum(cost * w)
             net_losses.append(l_f.item())
             writer.add_scalar('StepLoss/train', l_f.item(), global_step)
             epoch_loss = epoch_loss + l_f.item()
