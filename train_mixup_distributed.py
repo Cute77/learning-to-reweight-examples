@@ -22,7 +22,7 @@ import matplotlib.pyplot as plt
 from tensorboardX import SummaryWriter
 import higher 
 
-os.environ["CUDA_VISIBEL_DEVICES"] = "4, 5"
+os.environ["CUDA_VISIBEL_DEVICES"] = "4,5"
 
 
 def synchronize():
@@ -235,8 +235,10 @@ def train_net(noise_fraction,
             print(mixup_labels.size())
             mixup_labels = beta * mixup_labels + (1-beta) * prob
             # cost = loss(y_f_hat, mixup_labels)
-            cost = torch.mean(torch.log(y_f_hat+1e-10)*mixup_labels)
+            cost = torch.log(y_f_hat+1e-10)*mixup_labels
+            cost = cost.view(-1)
             w = torch.ones(cost.size()).cuda(local_rank)
+            w = w.view(-1)
             # cost = F.binary_cross_entropy_with_logits(y_f_hat, labels, reduce=False)
             l_f = torch.sum(cost * w)
             net_losses.append(l_f.item())
