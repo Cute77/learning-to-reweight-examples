@@ -198,7 +198,7 @@ def train_net(noise_fraction,
                 # print(eps)
                 # l_g_meta = F.binary_cross_entropy_with_logits(y_g_hat, val_labels)
 
-                grad_eps = torch.autograd.grad(l_g_meta, eps, only_inputs=True, retain_graph=True, allow_unused=True)[0].detach()
+                grad_eps = torch.autograd.grad(l_g_meta, eps, only_inputs=True, allow_unused=True)[0].detach()
                 #print("epos: ", type(grad_eps))
                 # print(grad_eps)
                 # Line 11 computing and normalizing the weights
@@ -224,7 +224,7 @@ def train_net(noise_fraction,
             train_iter.append((y_predicted.int() == labels.int()).sum().item())
             
             beta = beta.repeat(9, 1).view(32, 9)
-            prob = nn.functional.softmax(y_f_hat, dim=1)
+            prob = nn.functional.softmax(y_f_hat, dim=1).detach()
             prob = prob.cuda(local_rank)
             beta = beta.cuda(local_rank)
             # print(prob)
