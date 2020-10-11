@@ -21,6 +21,7 @@ import matplotlib
 import matplotlib.pyplot as plt
 from tensorboardX import SummaryWriter
 import higher 
+from torch.optim.lr_scheduler import StepLR
 
 os.environ["CUDA_VISIBEL_DEVICES"] = "0, 1, 2, 3"
 
@@ -110,6 +111,7 @@ def train_net(noise_fraction,
     data = iter(data_loader)
     loss = nn.CrossEntropyLoss(reduction="none")
     writer = SummaryWriter(comment=f'name_{args.figpath}')
+    scheduler = StepLR(opt, step_size=500, gamma=0.5)
     
     plot_step = 10
     net_losses = []
@@ -150,6 +152,7 @@ def train_net(noise_fraction,
         num_y = 0
         test_num = 0
         correct_num = 0
+
         for i in range(len(data_loader)):
             # print('train: ', len(train))
             # print(len(data_loader))
@@ -265,7 +268,8 @@ def train_net(noise_fraction,
         writer.add_scalar('EpochAccuracy/test', correct_num/test_num, epoch)
         acc_test.append(correct_num/test_num)
         '''
-
+        scheduler.step()
+        
         if is_distributed and local_rank == 0 and epoch % 10 == 0:
             path = 'baseline/' + fig_path + '_' + str(epoch) + '_model.pth'
             torch.save(net.state_dict(), path) 
