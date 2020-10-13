@@ -111,7 +111,7 @@ def train_net(noise_fraction,
     data = iter(data_loader)
     loss = nn.CrossEntropyLoss(reduction="none")
     writer = SummaryWriter(comment=f'name_{args.figpath}')
-    scheduler = StepLR(opt, step_size=500, gamma=0.5)
+    scheduler = StepLR(opt, step_size=500, gamma=0.5, last_epoch=990)
     
     plot_step = 10
     net_losses = []
@@ -152,6 +152,7 @@ def train_net(noise_fraction,
         num_y = 0
         test_num = 0
         correct_num = 0
+        ws = []
 
         for i in range(len(data_loader)):
             # print('train: ', len(train))
@@ -201,6 +202,9 @@ def train_net(noise_fraction,
                 w = w_tilde / norm_c
             else:
                 w = w_tilde
+
+            if epoch % 501 == 0:
+                ws.append(w.item())
 
             # Lines 12 - 14 computing for the loss with the computed weights
             # and then perform a parameter update
@@ -269,7 +273,11 @@ def train_net(noise_fraction,
         acc_test.append(correct_num/test_num)
         '''
         scheduler.step()
-        
+
+        if epoch % 501 == 0:
+            plt.hist(x=ws, bins=20)
+            plt.savefig(fig_path+'_'+str(epoch)+'_w.png')
+
         if is_distributed and local_rank == 0 and epoch % 10 == 0:
             path = 'baseline/' + fig_path + '_' + str(epoch) + '_model.pth'
             torch.save(net.state_dict(), path) 
