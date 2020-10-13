@@ -43,7 +43,7 @@ def synchronize():
 def build_model(lr, local_rank):
     net = models.resnet101(pretrained=True, num_classes=9)
     net = net.cuda(local_rank)
-    opt = torch.optim.SGD(net.parameters(), lr, weight_decay=1e-4)
+    opt = torch.optim.SGD([{'params': net.parameters(), 'initial_lr': lr}], lr, weight_decay=1e-4)
     
     return net, opt
 
