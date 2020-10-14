@@ -152,7 +152,6 @@ def train_net(noise_fraction,
         num_y = 0
         test_num = 0
         correct_num = 0
-        ws = torch.ones([1])
 
         for i in range(len(data_loader)):
             # print('train: ', len(train))
@@ -203,8 +202,12 @@ def train_net(noise_fraction,
             else:
                 w = w_tilde
 
-            if epoch % 501 == 0:
-                ws = torch.cat(ws, w)
+            print(w.shape())
+            if epoch % 1001 == 0:
+                if i == 1:
+                    ws = w
+                else:
+                    ws = torch.cat(ws, w)
 
             # Lines 12 - 14 computing for the loss with the computed weights
             # and then perform a parameter update
@@ -278,6 +281,7 @@ def train_net(noise_fraction,
             ws = ws.numpy().tolist()
             plt.hist(x=ws, bins=20)
             plt.savefig(fig_path+'_'+str(epoch)+'_w.png')
+            print('weight saved')
 
         if is_distributed and local_rank == 0 and epoch % 10 == 0:
             path = 'baseline/' + fig_path + '_' + str(epoch) + '_model.pth'
