@@ -202,7 +202,7 @@ def train_net(noise_fraction,
             else:
                 w = w_tilde
 
-            print(w.shape())
+            print(w.size())
             if epoch % 1001 == 0:
                 if i == 1:
                     ws = w
