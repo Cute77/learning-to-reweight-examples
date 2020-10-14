@@ -209,6 +209,7 @@ def train_net(noise_fraction,
                 if i == 1:
                     ws = w
                 else:
+                    print('i: ', i)
                     ws = torch.cat([ws, w])
 
             # Lines 12 - 14 computing for the loss with the computed weights
@@ -279,8 +280,8 @@ def train_net(noise_fraction,
         '''
         scheduler.step()
 
-        if epoch % 501 == 0 and local_rank == 0:
-            ws = ws.numpy().tolist()
+        if epoch % 1001 == 0 and local_rank == 0:
+            ws = ws.cpu().numpy().tolist()
             plt.hist(x=ws, bins=20)
             plt.savefig(fig_path+'_'+str(epoch)+'_w.png')
             print('weight saved')
