@@ -152,6 +152,7 @@ def train_net(noise_fraction,
         num_y = 0
         test_num = 0
         correct_num = 0
+        ws = torch.ones([32])
 
         for i in range(len(data_loader)):
             # print('train: ', len(train))
