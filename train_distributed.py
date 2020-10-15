@@ -203,10 +203,11 @@ def train_net(noise_fraction,
             else:
                 w = w_tilde
 
-            print(type(w))
-            print(type(ws))
-            if epoch % 1001 == 0:
-                if i == 1:
+            # print(type(w))
+            # print(type(ws))
+            if epoch == 1001:
+                if i == 0:
+                    print('i:', i)
                     ws = w
                 else:
                     print('i: ', i)
@@ -280,7 +281,7 @@ def train_net(noise_fraction,
         '''
         scheduler.step()
 
-        if epoch % 1001 == 0 and local_rank == 0:
+        if epoch == 1001 and local_rank == 0:
             ws = ws.cpu().numpy().tolist()
             plt.hist(x=ws, bins=20)
             plt.savefig(fig_path+'_'+str(epoch)+'_w.png')
