@@ -205,7 +205,7 @@ def train_net(noise_fraction,
 
             # print(type(w))
             # print(type(ws))
-            print(epoch)
+            # print(epoch)
             if epoch % 501 == 0:
                 if i == 0:
                     # print('i:', i)
