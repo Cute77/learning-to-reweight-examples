@@ -22,6 +22,7 @@ import matplotlib.pyplot as plt
 from tensorboardX import SummaryWriter
 import higher 
 from torch.optim.lr_scheduler import StepLR
+from skimage.io import imread, imsave
 
 # os.environ["CUDA_VISIBEL_DEVICES"] = "0, 1, 2, 3"
 
@@ -210,22 +211,24 @@ def train_net(noise_fraction,
             big = 0
             if epoch == 501 or epoch == 1001 or epoch == 1501:
                 for k in range(w.shape[0]):
-                    if w[k] < 0.05 and samll < 100:
-                        small = samll + 1
+                    if w[k] < 0.05 and small < 100:
+                        small = small + 1
                         name = 'img_temp/w_0.05/' + str(small)
                         image_np = image[k]
-                        img_np = image.cpu().numpy().squeeze()
+                        img_np = image_np.cpu().numpy().squeeze()
                         img_np = (img_np + 1) / 2 
                         img_np = (np.moveaxis(img_np, 0, -1)).astype(np.uint8) 
-                        imsave('name', img_np)
+                        imsave(name, img_np)
+                        print(name, 'saved.')
                     if w[k] > 0.9 and big < 100:
                         big = big + 1
                         name = 'img_temp/w_0.9/' + str(big)
                         image_np = image[k]
-                        img_np = image.cpu().numpy().squeeze()
+                        img_np = image_np.cpu().numpy().squeeze()
                         img_np = (img_np + 1) / 2 
                         img_np = (np.moveaxis(img_np, 0, -1)).astype(np.uint8) 
-                        imsave('name', img_np)                       
+                        imsave(name, img_np) 
+                        print(name, 'saved.')                      
                 if i == 0:
                     # print('i:', i)
                     ws = w
