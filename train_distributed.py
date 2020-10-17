@@ -218,6 +218,7 @@ def train_net(noise_fraction,
                         print('image: ', image[k].shape)
                         img_np = image_np.cpu().numpy().squeeze()
                         img_np = (img_np + 1) / 2 
+                        img_np = img_np * 255
                         img_np = (np.moveaxis(img_np, 0, -1)).astype(np.uint8)
                         print('img_np: ', img_np.shape) 
                         imsave(name, img_np)
@@ -228,6 +229,7 @@ def train_net(noise_fraction,
                         image_np = image[k]
                         img_np = image_np.cpu().numpy().squeeze()
                         img_np = (img_np + 1) / 2 
+                        img_np = img_np * 255
                         img_np = (np.moveaxis(img_np, 0, -1)).astype(np.uint8) 
                         imsave(name, img_np) 
                         print(name, 'saved.')                      
