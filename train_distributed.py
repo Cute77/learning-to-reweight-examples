@@ -23,7 +23,7 @@ from tensorboardX import SummaryWriter
 import higher 
 from torch.optim.lr_scheduler import StepLR
 
-os.environ["CUDA_VISIBEL_DEVICES"] = "0, 1, 2, 3"
+# os.environ["CUDA_VISIBEL_DEVICES"] = "0, 1, 2, 3"
 
 def synchronize():
     """
@@ -206,7 +206,26 @@ def train_net(noise_fraction,
             # print(type(w))
             # print(type(ws))
             # print(epoch)
-            if epoch % 501 == 0:
+            small = 0
+            big = 0
+            if epoch == 501 or epoch == 1001 or epoch == 1501:
+                for k in range(w.shape[0]):
+                    if w[k] < 0.05 and samll < 100:
+                        small = samll + 1
+                        name = 'img_temp/w_0.05/' + str(small)
+                        image_np = image[k]
+                        img_np = image.cpu().numpy().squeeze()
+                        img_np = (img_np + 1) / 2 
+                        img_np = (np.moveaxis(img_np, 0, -1)).astype(np.uint8) 
+                        imsave('name', img_np)
+                    if w[k] > 0.9 and big < 100:
+                        big = big + 1
+                        name = 'img_temp/w_0.9/' + str(big)
+                        image_np = image[k]
+                        img_np = image.cpu().numpy().squeeze()
+                        img_np = (img_np + 1) / 2 
+                        img_np = (np.moveaxis(img_np, 0, -1)).astype(np.uint8) 
+                        imsave('name', img_np)                       
                 if i == 0:
                     # print('i:', i)
                     ws = w
@@ -282,7 +301,7 @@ def train_net(noise_fraction,
         '''
         scheduler.step()
 
-        if epoch % 501 == 0 and local_rank == 0:
+        if epoch == 501 or epoch == 1001 or epoch == 1501 and local_rank == 0:
             ws = ws.cpu().numpy().tolist()
             plt.hist(x=ws, bins=20)
             plt.savefig(fig_path+'_'+str(epoch)+'_w.png')
