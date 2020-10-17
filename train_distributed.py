@@ -213,7 +213,7 @@ def train_net(noise_fraction,
                 for k in range(w.shape[0]):
                     if w[k] < 0.05 and small < 100:
                         small = small + 1
-                        name = 'img_temp/w_0.05/' + str(small) + '.jpg'
+                        name = 'img_temp/w_0.05/' + str(epoch) + '_' + str(small) + '.jpg'
                         image_np = image[k]
                         print('image: ', image[k].shape)
                         img_np = image_np.cpu().numpy().squeeze()
@@ -225,7 +225,7 @@ def train_net(noise_fraction,
                         print(name, 'saved.')
                     if w[k] > 0.9 and big < 100:
                         big = big + 1
-                        name = 'img_temp/w_0.9/' + str(big) + '.jpg'
+                        name = 'img_temp/w_0.9/' + str(epoch) + '_' + str(big) + '.jpg'
                         image_np = image[k]
                         img_np = image_np.cpu().numpy().squeeze()
                         img_np = (img_np + 1) / 2 
