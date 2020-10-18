@@ -154,6 +154,8 @@ def train_net(noise_fraction,
         test_num = 0
         correct_num = 0
         ws = torch.ones([32]).cuda(local_rank)
+        big = 0
+        small = 0
 
         for i in range(len(data_loader)):
             # print('train: ', len(train))
@@ -207,8 +209,7 @@ def train_net(noise_fraction,
             # print(type(w))
             # print(type(ws))
             # print(epoch)
-            small = 0
-            big = 0
+
             if epoch == 501 or epoch == 1001 or epoch == 1501:
                 for k in range(w.shape[0]):
                     if w[k] < 0.05 and small < 100:
