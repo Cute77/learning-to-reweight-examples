@@ -59,7 +59,7 @@ def train_net(noise_fraction,
               save_cp=True,
               dir_checkpoint='checkpoints/ISIC_2019_Training_Input/',
               epochs=10, 
-              load=0):
+              load=-1):
 
     
     num_gpus = int(os.environ["WORLD_SIZE"]) if "WORLD_SIZE" in os.environ else 1
@@ -210,12 +210,12 @@ def train_net(noise_fraction,
             # print(type(w))
             # print(type(ws))
             # print(epoch)
-
+            '''
             if epoch == 501 or epoch == 1001 or epoch == 1501:
                 for k in range(w.shape[0]):
                     if w[k] < 0.05 and small < 100:
                         small = small + 1
-                        name = 'img_temp/w_0.05/' + str(epoch) + '_' + str(small) + '.jpg'
+                        name = fig_path + '/w_0.05/' + str(epoch) + '_' + str(small) + '.jpg'
                         image_np = image[k]
                         print('image: ', image[k].shape)
                         img_np = image_np.cpu().numpy().squeeze()
@@ -241,7 +241,7 @@ def train_net(noise_fraction,
                 else:
                     # print('i: ', i)
                     ws = torch.cat([ws, w])
-
+            '''
             # Lines 12 - 14 computing for the loss with the computed weights
             # and then perform a parameter update
             # with torch.no_grad():
@@ -309,13 +309,13 @@ def train_net(noise_fraction,
         acc_test.append(correct_num/test_num)
         '''
         scheduler.step()
-
+        '''
         if (epoch == 501 or epoch == 1001 or epoch == 1501) and local_rank == 0:
             ws = ws.cpu().numpy().tolist()
             plt.hist(x=ws, bins=20)
             plt.savefig(fig_path+'_'+str(epoch)+'_w.png')
             print('weight saved')
-
+        '''
         if is_distributed and local_rank == 0 and epoch % 10 == 0:
             path = 'baseline/' + fig_path + '_' + str(epoch) + '_model.pth'
             torch.save(net.state_dict(), path) 
@@ -411,7 +411,7 @@ def get_args():
                         help='Fig Path', dest='figpath')
     parser.add_argument('-r', '--local_rank', metavar='RA', type=int, nargs='?', default=0,
                         help='from torch.distributed.launch', dest='local_rank')
-    parser.add_argument('-o', '--load', metavar='LO', type=int, nargs='?', default=0,
+    parser.add_argument('-o', '--load', metavar='LO', type=int, nargs='?', default=-1,
                         help='load epoch', dest='load')
     return parser.parse_args()
 
