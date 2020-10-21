@@ -322,8 +322,8 @@ def train_net(noise_fraction,
 
         if is_distributed and local_rank == 0:
             # torch.save(net.state_dict(), path) 
-            print('learning rate: ', opt.param_groups[0]['lr'])
             print('epoch ', epoch)
+            print('learning rate: ', opt.param_groups[0]['lr'])
 
             print('epoch loss: ', epoch_loss/len(data_loader))
             loss_train.append(epoch_loss/len(data_loader))
