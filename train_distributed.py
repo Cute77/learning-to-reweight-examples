@@ -24,6 +24,14 @@ import higher
 from torch.optim.lr_scheduler import StepLR
 from skimage.io import imread, imsave
 
+torch.manual_seed(seed)
+torch.cuda.manual_seed(seed) 
+torch.cuda.manual_seed_all(seed)
+np.random.seed(seed)  
+random.seed(seed)   
+torch.backends.cudnn.benchmark = False
+torch.backends.cudnn.deterministic = True
+
 # os.environ["CUDA_VISIBEL_DEVICES"] = "0, 1, 2, 3"
 
 def synchronize():
@@ -252,11 +260,12 @@ def train_net(noise_fraction,
             correct_y = correct_y + (y_predicted.int() == labels.int()).sum().item()
             num_y = num_y + labels.size(0) 
             writer.add_scalar('StepAccuracy/train', ((y_predicted.int() == labels.int()).sum().item()/labels.size(0)), global_step)
-            train_iter.append((y_predicted.int() == labels.int()).sum().item())
+            train_iter.append((y_predicted.int() == labels.int()).sum().item()/labels.size(0))
             
             cost = loss(y_f_hat, labels)
 
             # cost = F.binary_cross_entropy_with_logits(y_f_hat, labels, reduce=False)
+            w = torch.full([32], 1/32).cuda(local_rank)
             l_f = torch.sum(cost * w)
             net_losses.append(l_f.item())
             writer.add_scalar('StepLoss/train', l_f.item(), global_step)
@@ -289,7 +298,7 @@ def train_net(noise_fraction,
                     correct_num = correct_num + (predicted.int() == test_label.int()).sum().item()
                     # acc.append((predicted.int() == test_label.int()).float())
                     writer.add_scalar('StepAccuracy/test', ((predicted.int() == test_label.int()).sum().item()/test_label.size(0)), test_step)
-                    test_iter.append((predicted.int() == test_label.int()).sum().item())
+                    test_iter.append((predicted.int() == test_label.int()).sum().item()/test_label.size(0))
                     test_step = test_step + 1
         '''
         print('epoch ', epoch)
