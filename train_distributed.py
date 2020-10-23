@@ -24,6 +24,7 @@ import higher
 from torch.optim.lr_scheduler import StepLR
 from skimage.io import imread, imsave
 
+seed = 1
 torch.manual_seed(seed)
 torch.cuda.manual_seed(seed) 
 torch.cuda.manual_seed_all(seed)
