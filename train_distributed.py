@@ -23,6 +23,7 @@ from tensorboardX import SummaryWriter
 import higher 
 from torch.optim.lr_scheduler import StepLR
 from skimage.io import imread, imsave
+import random
 
 seed = 1
 torch.manual_seed(seed)
