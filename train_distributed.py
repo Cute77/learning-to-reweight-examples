@@ -269,6 +269,7 @@ def train_net(noise_fraction,
             # cost = F.binary_cross_entropy_with_logits(y_f_hat, labels, reduce=False)
             w = torch.full(cost.size(), 1/32).cuda(local_rank)
             print('w: ', w.size())
+            print('w: ', w)
             print('cost: ', cost.size())
             l_f = torch.sum(cost * w)
             net_losses.append(l_f.item())
