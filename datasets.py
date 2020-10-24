@@ -21,7 +21,7 @@ class BasicDataset(Dataset):
             print(datatxt)
 
         if mode == 'val':
-            datatxt = 'ISIC_2019_Training_GroundTruth_sub_clean.csv'    
+            datatxt = 'ISIC_2019_Training_GroundTruth_clean.csv'    
             print(datatxt)
 
         if mode == 'base':

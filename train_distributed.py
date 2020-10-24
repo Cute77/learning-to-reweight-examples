@@ -115,11 +115,8 @@ def train_net(noise_fraction,
     # data_loader = get_mnist_loader(hyperparameters['batch_size'], classes=[9, 4], proportion=0.995, mode="train")
     # test_loader = get_mnist_loader(hyperparameters['batch_size'], classes=[9, 4], proportion=0.5, mode="test")
 
-    val_data, val_labels = next(iter(val_loader))
-    val_data = val_data.cuda(local_rank)
-    val_labels = val_labels.cuda(local_rank)
-
     data = iter(data_loader)
+    val = iter(val_loader)
     loss = nn.CrossEntropyLoss(reduction="none")
     writer = SummaryWriter(comment=f'name_{args.figpath}')
     scheduler = StepLR(opt, step_size=50, gamma=0.5, last_epoch=load)
@@ -177,6 +174,12 @@ def train_net(noise_fraction,
                 data = iter(data_loader)
                 image, labels = next(data)
 
+            try:
+                val_data, val_labels = next(val)
+            except StopIteration:
+                val = iter(val_loader)
+                val_data, val_labels = next(val)
+
             # meta_net.load_state_dict(net.state_dict())
 
             image = image.cuda(local_rank)
@@ -184,6 +187,9 @@ def train_net(noise_fraction,
             image.requires_grad = False
             labels.requires_grad = False
             
+            val_data = val_data.cuda(local_rank)
+            val_labels = val_labels.cuda(local_rank)
+
             with higher.innerloop_ctx(net, opt) as (meta_net, meta_opt):
                 y_f_hat = meta_net(image)
                 cost = loss(y_f_hat, labels)
