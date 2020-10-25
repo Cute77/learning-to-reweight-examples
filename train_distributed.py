@@ -275,10 +275,10 @@ def train_net(noise_fraction,
 
             # cost = F.binary_cross_entropy_with_logits(y_f_hat, labels, reduce=False)
             # w = torch.full(cost.size(), 1/32).cuda(local_rank)
-            print('w: ', w)
-            print('cost: ', cost)
+            # print('w: ', w)
+            # print('cost: ', cost)
             l_f = torch.sum(cost * w)
-            print(l_f.item())
+            # print(l_f.item())
             net_losses.append(l_f.item())
             writer.add_scalar('StepLoss/train', l_f.item(), global_step)
             epoch_loss = epoch_loss + l_f.item()
