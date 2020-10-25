@@ -160,9 +160,9 @@ def train_net(noise_fraction,
         num_y = 0
         test_num = 0
         correct_num = 0
-        ws = torch.ones([32]).cuda(local_rank)
-        big = 0
-        small = 0
+        # ws = torch.ones([32]).cuda(local_rank)
+        # big = 0
+        # small = 0
 
         for i in range(len(data_loader)):
             # print('train: ', len(train))
@@ -252,13 +252,14 @@ def train_net(noise_fraction,
                         img_np = (np.moveaxis(img_np, 0, -1)).astype(np.uint8) 
                         imsave(name, img_np) 
                         print(name, 'saved.')  
-                '''                    
+                                   
                 if i == 0:
                     # print('i:', i)
                     ws = w
                 else:
                     # print('i: ', i)
                     ws = torch.cat([ws, w])
+                '''
             
             # Lines 12 - 14 computing for the loss with the computed weights
             # and then perform a parameter update
@@ -274,6 +275,8 @@ def train_net(noise_fraction,
 
             # cost = F.binary_cross_entropy_with_logits(y_f_hat, labels, reduce=False)
             # w = torch.full(cost.size(), 1/32).cuda(local_rank)
+            print('w: ', w)
+            print('cost: ', cost)
             l_f = torch.sum(cost * w)
             net_losses.append(l_f.item())
             writer.add_scalar('StepLoss/train', l_f.item(), global_step)
@@ -328,13 +331,13 @@ def train_net(noise_fraction,
         acc_test.append(correct_num/test_num)
         '''
         scheduler.step()
-        
+        '''
         if (epoch == 31 or epoch == 101 or epoch == 151) and local_rank == 0:
             ws = ws.cpu().numpy().tolist()
             plt.hist(x=ws, bins=20)
             plt.savefig(fig_path+'_'+str(epoch)+'_w.png')
             print('weight saved')
-        
+        '''
         if is_distributed and local_rank == 0 and epoch % 10 == 0:
             path = 'baseline/' + fig_path + '_' + str(epoch) + '_model.pth'
             torch.save(net.state_dict(), path) 
