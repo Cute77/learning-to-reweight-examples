@@ -116,7 +116,7 @@ def train_net(noise_fraction,
     # test_loader = get_mnist_loader(hyperparameters['batch_size'], classes=[9, 4], proportion=0.5, mode="test")
 
     data = iter(data_loader)
-    val = iter(val_loader)
+    vali = iter(val_loader)
     loss = nn.CrossEntropyLoss(reduction="none")
     writer = SummaryWriter(comment=f'name_{args.figpath}')
     scheduler = StepLR(opt, step_size=50, gamma=0.5, last_epoch=load)
@@ -175,10 +175,10 @@ def train_net(noise_fraction,
                 image, labels = next(data)
 
             try:
-                val_data, val_labels = next(val)
+                val_data, val_labels = next(vali)
             except StopIteration:
-                val = iter(val_loader)
-                val_data, val_labels = next(val)
+                vali = iter(val_loader)
+                val_data, val_labels = next(vali)
 
             # meta_net.load_state_dict(net.state_dict())
 
