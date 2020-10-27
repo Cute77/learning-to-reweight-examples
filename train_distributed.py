@@ -213,8 +213,8 @@ def train_net(noise_fraction,
                 # print(grad_eps)
                 # Line 11 computing and normalizing the weights
 
-            # w_tilde = torch.clamp(-grad_eps, min=0)
-            w_tilde = torch.sigmoid(-grad_eps)
+            w_tilde = torch.clamp(-grad_eps, min=0)
+            # w_tilde = torch.sigmoid(-grad_eps)
             # print('w_tilde: ', w_tilde)
             norm_c = torch.sum(w_tilde)
 
