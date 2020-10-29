@@ -200,7 +200,7 @@ def train_net(noise_fraction,
                 # l_g_meta = F.binary_cross_entropy_with_logits(y_g_hat, val_labels)
 
                 grad_eps = torch.autograd.grad(l_g_meta, eps, only_inputs=True, create_graph=True, retain_graph=True, allow_unused=True)[0].detach()
-                #print("epos: ", type(grad_eps))
+                # print("epos: ", type(grad_eps))
                 # print(grad_eps)
                 # Line 11 computing and normalizing the weights
 
@@ -224,15 +224,16 @@ def train_net(noise_fraction,
             writer.add_scalar('StepAccuracy/train', ((y_predicted.int() == labels.int()).sum().item()/labels.size(0)), global_step)
             train_iter.append((y_predicted.int() == labels.int()).sum().item())
             
+            print('beta before: ', beta.size())
             beta = beta.repeat(9, 1).view(32, 9)
             prob = nn.functional.softmax(y_f_hat, dim=1).detach()
             prob = prob.cuda(local_rank)
             beta = beta.cuda(local_rank)
             # print(prob)
-            print(prob.size())
+            print('prob: ', prob.size())
             # print(beta)
-            print(beta.size())
-            print(mixup_labels.size())
+            print('beta: ', beta.size())
+            print('mixuplabel: ', mixup_labels.size())
             mixup_labels = beta * mixup_labels + (1-beta) * prob
             # cost = loss(y_f_hat, mixup_labels)
             cost = torch.log(y_f_hat+1e-10) * mixup_labels
@@ -247,6 +248,7 @@ def train_net(noise_fraction,
 
             opt.zero_grad()
             l_f.backward(retain_graph=True)
+            print('success')
             opt.step()
             
             if i % plot_step == 0:
