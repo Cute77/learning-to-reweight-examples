@@ -22,7 +22,7 @@ import matplotlib.pyplot as plt
 from tensorboardX import SummaryWriter
 import higher 
 
-os.environ["CUDA_VISIBEL_DEVICES"] = "4,5"
+# os.environ["CUDA_VISIBEL_DEVICES"] = "4,5"
 
 
 def synchronize():
@@ -68,7 +68,7 @@ def train_net(noise_fraction,
     path = 'baseline/' + fig_path + '_' + str(load) + '_model.pth'
     if is_distributed:
         torch.cuda.set_device(local_rank) 
-        print("local_rank:", local_rank)
+        # print("local_rank:", local_rank)
         torch.distributed.init_process_group(
             backend="nccl", init_method="env://"
         )    
@@ -225,7 +225,7 @@ def train_net(noise_fraction,
             train_iter.append((y_predicted.int() == labels.int()).sum().item())
             
             print('beta before: ', beta.size())
-            beta = beta.repeat(9, 1).view(32, 9)
+            beta = beta.repeat(9, 1).transpose(beta, 0, 1)
             prob = nn.functional.softmax(y_f_hat, dim=1).detach()
             prob = prob.cuda(local_rank)
             beta = beta.cuda(local_rank)
