@@ -225,7 +225,8 @@ def train_net(noise_fraction,
             train_iter.append((y_predicted.int() == labels.int()).sum().item())
             
             print('beta before: ', beta.size())
-            beta = beta.repeat(9, 1).transpose(beta, 0, 1)
+            beta = beta.repeat(9, 1)
+            beta = torch.transpose(beta, 0, 1)
             prob = nn.functional.softmax(y_f_hat, dim=1).detach()
             prob = prob.cuda(local_rank)
             beta = beta.cuda(local_rank)
