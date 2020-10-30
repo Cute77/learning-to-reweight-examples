@@ -250,7 +250,7 @@ def train_net(noise_fraction,
             epoch_loss = epoch_loss + l_f.item()
 
             opt.zero_grad()
-            l_f.backward()
+            l_f.backward(retain_graph=True)
             print('success')
             opt.step()
             
