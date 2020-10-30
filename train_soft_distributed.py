@@ -126,7 +126,7 @@ def train_net(noise_fraction,
     loss_train = []
     global_step = 0
     test_step = 0
-    mixup_labels = torch.ones([32, 9]).cuda(local_rank)
+    mixup_labels = torch.ones([batch_size, 9]).cuda(local_rank)
     mixup_labels.requires_grad = True
 
     if local_rank == 0:
@@ -250,7 +250,7 @@ def train_net(noise_fraction,
             epoch_loss = epoch_loss + l_f.item()
 
             opt.zero_grad()
-            l_f.backward(retain_graph=True)
+            l_f.backward()
             print('success')
             opt.step()
             
