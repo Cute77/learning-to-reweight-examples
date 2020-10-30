@@ -233,10 +233,10 @@ def train_net(noise_fraction,
             print('beta: ', beta)
             print('prob: ', prob)
             # print(prob)
-            # print('prob: ', prob.size())
+            print('prob: ', prob.size())
             # print(beta)
-            # print('beta: ', beta.size())
-            # print('mixuplabel: ', mixup_labels.size())
+            print('beta: ', beta.size())
+            print('mixuplabel: ', mixup_labels.size())
             mixup_labels = beta * mixup_labels + (1-beta) * prob
             # cost = loss(y_f_hat, mixup_labels)
             cost = torch.log(y_f_hat+1e-10) * mixup_labels
