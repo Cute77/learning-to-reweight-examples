@@ -123,6 +123,7 @@ class Bottleneck(nn.Module):
         identity = x
 
         out = self.conv1(x)
+        print('weight: ', self.conv1.parameters())
         print('out11: ', out)
         out = self.bn1(out)
         print('out12: ', out)
