@@ -204,7 +204,7 @@ def train_net(noise_fraction,
                 # print(grad_eps)
                 # Line 11 computing and normalizing the weights
 
-            beta_tilde = torch.clamp(-grad_eps, min=0).detach()
+            beta_tilde = torch.clamp(-grad_eps, min=0)
             # print(w_tilde)
             norm_c = torch.sum(beta_tilde)
 
@@ -240,6 +240,7 @@ def train_net(noise_fraction,
             mixup_labels = beta * mixup_labels + (1-beta) * prob
             # cost = loss(y_f_hat, mixup_labels)
             cost = torch.log(y_f_hat+1e-10) * mixup_labels
+            print('cost: ', cost)
             cost = cost.view(-1)
             w = torch.ones(cost.size()).cuda(local_rank)
             w = w.view(-1)
