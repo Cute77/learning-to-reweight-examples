@@ -4,7 +4,8 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.autograd import Variable
 # import model
-from torchvision import models
+# from torchvision import models
+import models
 from tqdm import tqdm
 import IPython
 import gc

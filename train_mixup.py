@@ -40,9 +40,9 @@ def synchronize():
     dist.barrier()
 
 
-def build_model(lr, local_rank):
+def build_model(lr):
     net = models.resnet101(pretrained=True, num_classes=9)
-    net = net.cuda(local_rank)
+    net = net.cuda()
     opt = torch.optim.SGD(net.parameters(), lr, weight_decay=1e-4)
     
     return net, opt
@@ -50,7 +50,6 @@ def build_model(lr, local_rank):
 
 def train_net(noise_fraction, 
               fig_path,
-              local_rank,
               lr=1e-3,
               momentum=0.9, 
               batch_size=128,
@@ -83,7 +82,7 @@ def train_net(noise_fraction,
             net.load_state_dict(torch.load(path))
 
     else:
-        net, opt = build_model(lr, local_rank)
+        net, opt = build_model(lr)
         if os.path.isfile(path):
             logging.info(f'''Continue''')
             net.load_state_dict(torch.load(path))
@@ -96,9 +95,9 @@ def train_net(noise_fraction,
     # n_train = len(dataset) - n_val
     # train, test = random_split(dataset, [n_train, n_test])
 
-    train_sampler = distributed.DistributedSampler(train, num_replicas=num_gpus, rank=local_rank) if is_distributed else None
+    # train_sampler = distributed.DistributedSampler(train, num_replicas=num_gpus, rank=local_rank) if is_distributed else None
 
-    data_loader = DataLoader(train, batch_size=batch_size, shuffle=False, num_workers=8, pin_memory=True, sampler=train_sampler)
+    data_loader = DataLoader(train, batch_size=batch_size, shuffle=False, num_workers=8, pin_memory=True)
     test_loader = DataLoader(test, batch_size=batch_size, shuffle=False, num_workers=8, pin_memory=True)
     val_loader = DataLoader(val, batch_size=5, shuffle=False, num_workers=8, pin_memory=True)
     
@@ -106,12 +105,8 @@ def train_net(noise_fraction,
     # test_loader = get_mnist_loader(hyperparameters['batch_size'], classes=[9, 4], proportion=0.5, mode="test")
 
     val_data, val_labels = next(iter(val_loader))
-    if is_distributed:
-        val_data = val_data.cuda(local_rank)
-        val_labels = val_labels.cuda(local_rank)
-    else:
-        val_data = val_data.cuda()
-        val_labels = val_labels.cuda()
+    val_data = val_data.cuda()
+    val_labels = val_labels.cuda()
 
     data = iter(data_loader)
     loss = nn.CrossEntropyLoss(reduction="none")
@@ -127,25 +122,21 @@ def train_net(noise_fraction,
     global_step = 0
     test_step = 0
 
-    if local_rank == 0:
-        logging.info(f'''Starting training:
-            Devices:         {num_gpus}
-            Epochs:          {epochs}
-            Batch size:      {batch_size}
-            Learning rate:   {lr}
-            Checkpoints:     {save_cp}
-            Noise fraction:  {noise_fraction}
-            Image dir:       {dir_img}
-            Model dir:       {fig_path}
-            From epoch:      {load}
-        ''')
+    logging.info(f'''Starting training:
+        Devices:         {num_gpus}
+        Epochs:          {epochs}
+        Batch size:      {batch_size}
+        Learning rate:   {lr}
+        Checkpoints:     {save_cp}
+        Noise fraction:  {noise_fraction}
+        Image dir:       {dir_img}
+        Model dir:       {fig_path}
+        From epoch:      {load}
+    ''')
 
     meta_net = models.resnet101(pretrained=True, num_classes=9)
     if torch.cuda.is_available():
-        if is_distributed:
-            meta_net.cuda(local_rank)
-        else:
-            meta_net.cuda()
+        meta_net.cuda()
 
     if is_distributed:
         meta_net = torch.nn.parallel.DistributedDataParallel(
@@ -170,12 +161,8 @@ def train_net(noise_fraction,
                 image, labels = next(data)
 
             # meta_net.load_state_dict(net.state_dict())
-            if is_distributed:
-                image = image.cuda(local_rank)
-                labels = labels.cuda(local_rank)
-            else:
-                image = image.cuda()
-                labels = labels.cuda()                
+            image = image.cuda()
+            labels = labels.cuda()                
             image.requires_grad = False
             labels.requires_grad = False
             
@@ -240,8 +227,8 @@ def train_net(noise_fraction,
                 net.eval()
 
                 for m, (test_img, test_label) in enumerate(test_loader):
-                    test_img = test_img.cuda(local_rank)
-                    test_label = test_label.cuda(local_rank)
+                    test_img = test_img.cuda()
+                    test_label = test_label.cuda()
                     test_img.requires_grad = False
                     test_label.requires_grad = False
 
@@ -280,46 +267,24 @@ def train_net(noise_fraction,
         writer.add_scalar('EpochAccuracy/test', correct_num/test_num, epoch)
         acc_test.append(correct_num/test_num)
         '''
-        if is_distributed and local_rank == 0 and epoch % 5 == 0:
-            path = 'baseline/' + fig_path + '_' + str(epoch) + '_model.pth'
-            torch.save(net.state_dict(), path) 
-
-        if is_distributed and local_rank == 0:
-            torch.save(net.state_dict(), path) 
-            print('local_rank: ', local_rank)
-            print('epoch ', epoch)
-
-            print('epoch loss: ', epoch_loss/len(data_loader))
-            loss_train.append(epoch_loss/len(data_loader))
-            writer.add_scalar('EpochLoss/train', epoch_loss/len(data_loader), epoch)
-
-            print('epoch accuracy: ', correct_y/num_y)
-            acc_train.append(correct_y/num_y)
-            writer.add_scalar('EpochAccuracy/train', correct_y/num_y, epoch)
-
-            print('test accuracy: ', correct_num/test_num)
-            writer.add_scalar('EpochAccuracy/test', correct_num/test_num, epoch)
-            acc_test.append(correct_num/test_num)
-
-        if not is_distributed and epoch % 5 == 0:
+        if epoch % 5 == 0:
             path = 'baseline/' + fig_path + '_' + str(epoch) + '_model.pth'
             torch.save(net.state_dict(), path)
             
-        if not is_distributed:
-            # torch.save(net.state_dict(), path)
-            print('epoch ', epoch)
+        # torch.save(net.state_dict(), path)
+        print('epoch ', epoch)
 
-            print('epoch loss: ', epoch_loss/len(data_loader))
-            loss_train.append(epoch_loss/len(train))
-            writer.add_scalar('EpochLoss/train', epoch_loss/len(data_loader), epoch)
+        print('epoch loss: ', epoch_loss/len(data_loader))
+        loss_train.append(epoch_loss/len(train))
+        writer.add_scalar('EpochLoss/train', epoch_loss/len(data_loader), epoch)
 
-            print('epoch accuracy: ', correct_y/num_y)
-            acc_train.append(correct_y/num_y)
-            writer.add_scalar('EpochAccuracy/train', correct_y/num_y, epoch)
+        print('epoch accuracy: ', correct_y/num_y)
+        acc_train.append(correct_y/num_y)
+        writer.add_scalar('EpochAccuracy/train', correct_y/num_y, epoch)
 
-            print('test accuracy: ', correct_num/test_num)
-            writer.add_scalar('EpochAccuracy/test', correct_num/test_num, epoch)
-            acc_test.append(correct_num/test_num)   
+        print('test accuracy: ', correct_num/test_num)
+        writer.add_scalar('EpochAccuracy/test', correct_num/test_num, epoch)
+        acc_test.append(correct_num/test_num)   
 
     IPython.display.clear_output()
     fig, axes = plt.subplots(2, 3)
@@ -377,8 +342,6 @@ def get_args():
                         help='checkpoint path', dest='dir_checkpoint')
     parser.add_argument('-f', '--fig-path', metavar='FP', type=str, nargs='?', default='baseline',
                         help='Fig Path', dest='figpath')
-    parser.add_argument('-r', '--local_rank', metavar='RA', type=int, nargs='?', default=0,
-                        help='from torch.distributed.launch', dest='local_rank')
     parser.add_argument('-o', '--load', metavar='LO', type=int, nargs='?', default=0,
                         help='load epoch', dest='load')
     return parser.parse_args()
@@ -398,7 +361,6 @@ if __name__ == '__main__':
                                   dir_checkpoint=args.dir_checkpoint,
                                   noise_fraction=args.noise_fraction,
                                   epochs=args.epochs,
-                                  local_rank=args.local_rank, 
                                   load = args.load)
         # print('Test Accuracy: ', accuracy)
 
