@@ -192,7 +192,7 @@ def train_net(noise_fraction,
             labels.requires_grad = False
             
             with higher.innerloop_ctx(net, opt) as (meta_net, meta_opt):
-                print('image: ', image)
+                # print('image: ', image)
                 y_f_hat = meta_net(image)
                 print('y_f_hat: ', y_f_hat)
                 cost = loss(y_f_hat, labels)
