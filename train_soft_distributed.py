@@ -21,8 +21,17 @@ import matplotlib
 import matplotlib.pyplot as plt
 from tensorboardX import SummaryWriter
 import higher 
+import random
 
 # os.environ["CUDA_VISIBEL_DEVICES"] = "4,5"
+seed = 1
+torch.manual_seed(seed)
+torch.cuda.manual_seed(seed) 
+torch.cuda.manual_seed_all(seed)
+np.random.seed(seed)  
+random.seed(seed)   
+torch.backends.cudnn.benchmark = False
+torch.backends.cudnn.deterministic = True
 
 
 def synchronize():
@@ -182,6 +191,7 @@ def train_net(noise_fraction,
             labels.requires_grad = False
             
             with higher.innerloop_ctx(net, opt) as (meta_net, meta_opt):
+                print('image: ', image)
                 y_f_hat = meta_net(image)
                 print('y_f_hat: ', y_f_hat)
                 cost = loss(y_f_hat, labels)
