@@ -98,7 +98,7 @@ def train_net(noise_fraction,
 
     train_sampler = distributed.DistributedSampler(train, num_replicas=num_gpus, rank=local_rank) if is_distributed else None
 
-    data_loader = DataLoader(train, batch_size=batch_size, shuffle=False, num_workers=8, pin_memory=True, sampler=train_sampler)
+    data_loader = DataLoader(train, batch_size=batch_size, shuffle=False, num_workers=8, pin_memory=True, drop_last=True， sampler=train_sampler)
     test_loader = DataLoader(test, batch_size=batch_size, shuffle=False, num_workers=8, pin_memory=True)
     val_loader = DataLoader(val, batch_size=5, shuffle=False, num_workers=8, pin_memory=True)
     
@@ -222,7 +222,7 @@ def train_net(noise_fraction,
             correct_y = correct_y + (y_predicted.int() == labels.int()).sum().item()
             num_y = num_y + labels.size(0) 
             writer.add_scalar('StepAccuracy/train', ((y_predicted.int() == labels.int()).sum().item()/labels.size(0)), global_step)
-            train_iter.append((y_predicted.int() == labels.int()).sum().item())
+            train_iter.append((y_predicted.int() == labels.int()).sum().item()/labels.size(0))
             
             print('beta before: ', beta.size())
             beta = beta.repeat(9, 1)
@@ -275,7 +275,7 @@ def train_net(noise_fraction,
                     correct_num = correct_num + (predicted.int() == test_label.int()).sum().item()
                     # acc.append((predicted.int() == test_label.int()).float())
                     writer.add_scalar('StepAccuracy/test', ((predicted.int() == test_label.int()).sum().item()/test_label.size(0)), test_step)
-                    test_iter.append((predicted.int() == test_label.int()).sum().item())
+                    test_iter.append((predicted.int() == test_label.int()).sum().item()/test_label.size(0))
                     test_step = test_step + 1
         '''
         print('epoch ', epoch)
