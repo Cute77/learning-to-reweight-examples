@@ -224,17 +224,19 @@ def train_net(noise_fraction,
             writer.add_scalar('StepAccuracy/train', ((y_predicted.int() == labels.int()).sum().item()/labels.size(0)), global_step)
             train_iter.append((y_predicted.int() == labels.int()).sum().item()/labels.size(0))
             
-            print('beta before: ', beta.size())
+            # print('beta before: ', beta.size())
             beta = beta.repeat(9, 1)
             beta = torch.transpose(beta, 0, 1)
             prob = nn.functional.softmax(y_f_hat, dim=1).detach()
             prob = prob.cuda(local_rank)
             beta = beta.cuda(local_rank)
+            print('beta: ', beta)
+            print('prob: ', prob)
             # print(prob)
-            print('prob: ', prob.size())
+            # print('prob: ', prob.size())
             # print(beta)
-            print('beta: ', beta.size())
-            print('mixuplabel: ', mixup_labels.size())
+            # print('beta: ', beta.size())
+            # print('mixuplabel: ', mixup_labels.size())
             mixup_labels = beta * mixup_labels + (1-beta) * prob
             # cost = loss(y_f_hat, mixup_labels)
             cost = torch.log(y_f_hat+1e-10) * mixup_labels
