@@ -88,13 +88,13 @@ def train_net(noise_fraction,
         net = torch.nn.parallel.DistributedDataParallel(
             net, device_ids=[local_rank], output_device=local_rank, find_unused_parameters=True, 
         )
-        if os.path.isfile(path):
+        if os.path.isfile(path) and load > 0:
             logging.info(f'''Continue''')
             net.load_state_dict(torch.load(path))
 
     else:
         net, opt = build_model(lr, local_rank)
-        if os.path.isfile(path):
+        if os.path.isfile(path) and load > 0:
             logging.info(f'''Continue''')
             net.load_state_dict(torch.load(path))
         # net, opt = build_model(lr, local_rank)
