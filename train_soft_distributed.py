@@ -231,7 +231,6 @@ def train_net(noise_fraction,
             # and then perform a parameter update
             # with torch.no_grad():
             y_f_hat = net(image)
-
             _, y_predicted = torch.max(y_f_hat, 1)
             correct_y = correct_y + (y_predicted.int() == labels.int()).sum().item()
             num_y = num_y + labels.size(0) 
@@ -247,13 +246,14 @@ def train_net(noise_fraction,
             print('beta: ', beta)
             print('prob: ', prob)
             # print(prob)
-            print('prob: ', prob.size())
+            # print('prob: ', prob.size())
             # print(beta)
-            print('beta: ', beta.size())
-            print('mixuplabel: ', mixup_labels.size())
+            # print('beta: ', beta.size())
+            # print('mixuplabel: ', mixup_labels.size())
             mixup_labels = beta * mixup_labels + (1-beta) * prob
             # cost = loss(y_f_hat, mixup_labels)
-            cost = torch.log(y_f_hat+1e-10) * mixup_labels
+            y_f_hat = torch.softmax(y_f_hat, 1)
+            cost = -1 * torch.log(y_f_hat+1e-10) * mixup_labels
             print('cost: ', cost)
             cost = cost.view(-1)
             w = torch.ones(cost.size()).cuda(local_rank)
