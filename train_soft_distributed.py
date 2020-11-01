@@ -195,9 +195,9 @@ def train_net(noise_fraction,
                 # print('meta_net: ', list(meta_net.parameters()))
                 # print('image: ', image)
                 y_f_hat = meta_net(image)
-                print('y_f_hat: ', y_f_hat)
+                # print('y_f_hat: ', y_f_hat)
                 cost = loss(y_f_hat, labels)
-                print('cost1: ', cost)
+                # print('cost1: ', cost)
                 eps = torch.zeros(cost.size()).cuda(local_rank)
                 eps = eps.requires_grad_()
                 l_f_meta = torch.sum(cost * eps)
@@ -243,8 +243,8 @@ def train_net(noise_fraction,
             prob = nn.functional.softmax(y_f_hat, dim=1).detach()
             prob = prob.cuda(local_rank)
             beta = beta.cuda(local_rank)
-            print('beta: ', beta)
-            print('prob: ', prob)
+            # print('beta: ', beta)
+            # print('prob: ', prob)
             # print(prob)
             # print('prob: ', prob.size())
             # print(beta)
@@ -254,7 +254,7 @@ def train_net(noise_fraction,
             # cost = loss(y_f_hat, mixup_labels)
             y_f_hat = torch.softmax(y_f_hat, 1)
             cost = -1 * torch.log(y_f_hat+1e-10) * mixup_labels
-            print('cost: ', cost)
+            # print('cost: ', cost)
             cost = cost.view(-1)
             w = torch.ones(cost.size()).cuda(local_rank)
             w = w.view(-1)
@@ -266,7 +266,7 @@ def train_net(noise_fraction,
 
             opt.zero_grad()
             l_f.backward(retain_graph=True)
-            print('success')
+            # print('success')
             opt.step()
             
             if i % plot_step == 0:
@@ -341,6 +341,7 @@ def train_net(noise_fraction,
         if not is_distributed:
             # torch.save(net.state_dict(), path)
             print('epoch ', epoch)
+            print('learning rate: ', opt.param_groups[0]['lr'])
 
             print('epoch loss: ', epoch_loss/len(data_loader))
             loss_train.append(epoch_loss/len(train))
