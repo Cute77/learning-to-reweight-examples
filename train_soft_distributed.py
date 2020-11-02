@@ -171,6 +171,7 @@ def train_net(noise_fraction,
         num_y = 0
         test_num = 0
         correct_num = 0
+        bs = torch.ones([batch_size]).cuda(local_rank)
         for i in range(len(data_loader)):
             # print('train: ', len(train))
             # print(len(data_loader))
@@ -226,6 +227,39 @@ def train_net(noise_fraction,
                 beta = beta_tilde / norm_c
             else:
                 beta = beta_tilde
+
+            if epoch == 11 or epoch == 21 or epoch == 31 or epoch == 101 or epoch == 151:
+                '''
+                for k in range(w.shape[0]):
+                    if w[k] < 0.05 and small < 100:
+                        small = small + 1
+                        name = fig_path + '/w_0.05/' + str(epoch) + '_' + str(small) + '.jpg'
+                        image_np = image[k]
+                        print('image: ', image[k].shape)
+                        img_np = image_np.cpu().numpy().squeeze()
+                        img_np = (img_np + 1) / 2 
+                        img_np = img_np * 255
+                        img_np = (np.moveaxis(img_np, 0, -1)).astype(np.uint8)
+                        print('img_np: ', img_np.shape) 
+                        imsave(name, img_np)
+                        print(name, 'saved.')
+                    if w[k] > 0.9 and big < 100:
+                        big = big + 1
+                        name = 'img_temp/w_0.9/' + str(epoch) + '_' + str(big) + '.jpg'
+                        image_np = image[k]
+                        img_np = image_np.cpu().numpy().squeeze()
+                        img_np = (img_np + 1) / 2 
+                        img_np = img_np * 255
+                        img_np = (np.moveaxis(img_np, 0, -1)).astype(np.uint8) 
+                        imsave(name, img_np) 
+                        print(name, 'saved.')  
+                '''                  
+                if i == 0:
+                    # print('i:', i)
+                    bs = beta
+                else:
+                    # print('i: ', i)
+                    bs = torch.cat([bs, beta])
 
             # Lines 12 - 14 computing for the loss with the computed weights
             # and then perform a parameter update
@@ -313,6 +347,13 @@ def train_net(noise_fraction,
         writer.add_scalar('EpochAccuracy/test', correct_num/test_num, epoch)
         acc_test.append(correct_num/test_num)
         '''
+
+        if (epoch == 11 or epoch == 21 or epoch == 31 or epoch == 101 or epoch == 151) and local_rank == 0:
+            bs = bs.cpu().numpy().tolist()
+            plt.hist(x=bs, bins=20)
+            plt.savefig(fig_path+'_'+str(epoch)+'_beta.png')
+            print('beta saved')
+
         if is_distributed and local_rank == 0 and epoch % 5 == 0:
             path = 'baseline/' + fig_path + '_' + str(epoch) + '_model.pth'
             torch.save(net.state_dict(), path) 
