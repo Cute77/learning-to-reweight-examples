@@ -313,7 +313,7 @@ def train_net(noise_fraction,
         '''
 
         scheduler.step()
-        
+
         '''
         if (epoch == 11 or epoch == 21 or epoch == 31 or epoch == 101 or epoch == 151) and local_rank == 0:
             bs = bs.cpu().numpy().tolist()
@@ -327,8 +327,8 @@ def train_net(noise_fraction,
 
         if is_distributed and local_rank == 0:
             torch.save(net.state_dict(), path) 
-            print('local_rank: ', local_rank)
             print('epoch ', epoch)
+            print('learning rate: ', opt.param_groups[0]['lr'])
 
             print('epoch loss: ', epoch_loss/len(data_loader))
             loss_train.append(epoch_loss/len(data_loader))
