@@ -235,9 +235,9 @@ def train_net(noise_fraction,
             
             beta = beta.cuda(local_rank)
             mixup_labels = beta * labels + (1-beta) * y_predicted
-            mixup_labels = mixup_labels.cpu()
-            mixup_labels = torch.LongTensor(mixup_labels).cuda(local_rank)
-            cost = loss(y_f_hat, mixup_labels)
+            # mixup_labels = mixup_labels.cpu()
+            # mixup_labels = torch.LongTensor(mixup_labels).cuda(local_rank)
+            cost = loss(y_f_hat, mixup_labels.long())
             w = torch.ones(cost.size()).cuda(local_rank)
             # cost = F.binary_cross_entropy_with_logits(y_f_hat, labels, reduce=False)
             l_f = torch.sum(cost * w)
