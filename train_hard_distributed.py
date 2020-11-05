@@ -44,7 +44,7 @@ def synchronize():
 def build_model(lr, local_rank):
     net = models.resnet101(pretrained=True, num_classes=9)
     net = net.cuda(local_rank)
-    opt = torch.optim.SGD(net.parameters(), lr, weight_decay=1e-4)
+    opt = torch.optim.SGD([{'params': net.parameters(), 'initial_lr': lr}], lr, weight_decay=1e-4)
     
     return net, opt
 
@@ -208,12 +208,19 @@ def train_net(noise_fraction,
 
             beta_tilde = torch.clamp(-grad_eps, min=0)
             # print(w_tilde)
-            norm_c = torch.sum(beta_tilde)
+            # norm_c = torch.sum(beta_tilde)
 
-            if norm_c != 0:
-                beta = beta_tilde / norm_c
-            else:
-                beta = beta_tilde
+            # if norm_c != 0:
+            #     beta = beta_tilde / norm_c
+            # else:
+            #     beta = beta_tilde
+            beta = beta_tilde
+
+            if epoch == 11 or epoch == 21 or epoch == 31 or epoch == 101 or epoch == 151:                 
+                if i == 0:
+                    bs = beta
+                else:
+                    bs = torch.cat([bs, beta])
 
             # Lines 12 - 14 computing for the loss with the computed weights
             # and then perform a parameter update
@@ -284,6 +291,13 @@ def train_net(noise_fraction,
         writer.add_scalar('EpochAccuracy/test', correct_num/test_num, epoch)
         acc_test.append(correct_num/test_num)
         '''
+
+        if (epoch == 11 or epoch == 21 or epoch == 31 or epoch == 101 or epoch == 151) and local_rank == 0:
+            bs = bs.cpu().numpy().tolist()
+            plt.hist(x=bs, bins=20)
+            plt.savefig(fig_path+'_'+str(epoch)+'_beta.png')
+            print('beta saved')
+
         if is_distributed and local_rank == 0 and epoch % 5 == 0:
             path = 'baseline/' + fig_path + '_' + str(epoch) + '_model.pth'
             torch.save(net.state_dict(), path) 

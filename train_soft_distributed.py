@@ -54,7 +54,7 @@ def synchronize():
 def build_model(lr, local_rank):
     net = models.resnet101(pretrained=True, num_classes=9)
     net = net.cuda(local_rank)
-    opt = torch.optim.SGD(net.parameters(), lr, weight_decay=1e-4)
+    opt = torch.optim.SGD([{'params': net.parameters(), 'initial_lr': lr}], lr, weight_decay=1e-4)
     
     return net, opt
 
@@ -223,12 +223,13 @@ def train_net(noise_fraction,
 
             beta_tilde = torch.clamp(-grad_eps, min=0)
             # print(w_tilde)
-            norm_c = torch.sum(beta_tilde)
+            # norm_c = torch.sum(beta_tilde)
 
-            if norm_c != 0:
-                beta = beta_tilde / norm_c
-            else:
-                beta = beta_tilde
+            # if norm_c != 0:
+            #     beta = beta_tilde / norm_c
+            # else:
+            #     beta = beta_tilde
+            beta = beta_tilde
 
             if epoch == 11 or epoch == 21 or epoch == 31 or epoch == 101 or epoch == 151:
                 '''
