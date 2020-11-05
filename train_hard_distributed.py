@@ -58,7 +58,7 @@ def train_net(noise_fraction,
               save_cp=True,
               dir_checkpoint='checkpoints/ISIC_2019_Training_Input/',
               epochs=10, 
-              load=0):
+              load=-1):
 
     
     num_gpus = int(os.environ["WORLD_SIZE"]) if "WORLD_SIZE" in os.environ else 1
@@ -116,6 +116,7 @@ def train_net(noise_fraction,
     data = iter(data_loader)
     loss = nn.CrossEntropyLoss(reduction="none")
     writer = SummaryWriter(comment=f'name_{args.figpath}')
+    scheduler = StepLR(opt, step_size=50, gamma=0.5, last_epoch=load)
     
     plot_step = 10
     net_losses = []
