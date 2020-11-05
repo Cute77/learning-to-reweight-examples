@@ -350,6 +350,8 @@ def train_net(noise_fraction,
         writer.add_scalar('EpochAccuracy/test', correct_num/test_num, epoch)
         acc_test.append(correct_num/test_num)
         '''
+        
+        scheduler.step()
 
         if (epoch == 11 or epoch == 21 or epoch == 31 or epoch == 101 or epoch == 151) and local_rank == 0:
             bs = bs.cpu().numpy().tolist()
