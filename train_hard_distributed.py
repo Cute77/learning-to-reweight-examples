@@ -197,6 +197,7 @@ def train_net(noise_fraction,
                 if local_rank == 0:
                     print('l_f_meta: ', l_f_meta)
                 # meta_net.zero_grad()
+                nn.utils.clip_grad_norm(l_f_meta, 0.25, norm_type=2)
                 meta_opt.step(l_f_meta)
                 # grads = torch.autograd.grad(l_f_meta, (meta_net.parameters()), create_graph=True, retain_graph=True)
                 # meta_net.module.update_parameters(lr, source_parameters=grads)
@@ -263,6 +264,7 @@ def train_net(noise_fraction,
 
             opt.zero_grad()
             l_f.backward()
+            nn.utils.clip_grad_norm(net.parameters(), 0.25, norm_type=2)
             opt.step()
             
             if i % plot_step == 0:
