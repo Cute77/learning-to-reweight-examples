@@ -36,13 +36,15 @@ class BasicDataset(Dataset):
         # fc = open(clean_datatxt, 'r')
         fh = open(datatxt, 'r')
         imgs = []
-        for line in fh:
-            line = line.rstrip()
-            # imgs.append((line.split(",")[0], line.split(",")[1:]))
-            if "marked" in datatxt:
+        if "marked" in datatxt:
+            for line in fh:
+                line = line.rstrip()
                 imgs.append((line.split(" ")[0], line.split(" ")[1].split(",")[0], line.split(" ")[1].split(",")[1:]))
-            else:
+        else:
+            for line in fh:
+                line = line.rstrip()
                 imgs.append(("0", line.split(",")[0], line.split(",")[1:]))
+
 
         self.imgs = imgs
         self.target_transform = target_transform
