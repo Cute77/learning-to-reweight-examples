@@ -13,7 +13,8 @@ import argparse
 class BasicDataset(Dataset):
     def __init__(self, imgs_dir, noise_fraction=None, mode='train', target_transform=None):
         if mode == 'train':
-            datatxt = 'ISIC_2019_Training_GroundTruth_sub5000_train_' + str(noise_fraction) + '.csv'
+            # datatxt = 'ISIC_2019_Training_GroundTruth_sub5000_train_' + str(noise_fraction) + '.csv'
+            datatxt = 'ISIC_2019_Training_GroundTruth_marked5000_train_' + str(noise_fraction) + '.csv'
             print(datatxt)
 
         if mode == 'test':
@@ -37,7 +38,11 @@ class BasicDataset(Dataset):
         imgs = []
         for line in fh:
             line = line.rstrip()
-            imgs.append((line.split(",")[0], line.split(",")[1:]))
+            # imgs.append((line.split(",")[0], line.split(",")[1:]))
+            if "marked" in datatxt:
+                imgs.append((line.split(" ")[0], line.split(" ")[1].split(",")[0], line.split(" ")[1].split(",")[1:]))
+            else:
+                imgs.append(("0", line.split(",")[0], line.split(",")[1:]))
 
         self.imgs = imgs
         self.target_transform = target_transform
@@ -72,9 +77,9 @@ class BasicDataset(Dataset):
         '''
 
     def __getitem__(self, index):
-        fn, labels = self.imgs[index]
+        mark, fn, labels = self.imgs[index]
+        mark = int(mark)
         label = labels.index('1.0')
-
         img = Image.open(self.imgs_dir+fn+'.jpg').convert('RGB')
         '''
         variance = np.random.randint(-5, 5) * 0.01
@@ -86,7 +91,7 @@ class BasicDataset(Dataset):
         '''
         img = self.transform(img)
 
-        return img, label
+        return img, label, mark
 
     def __len__(self):
         return len(self.imgs)

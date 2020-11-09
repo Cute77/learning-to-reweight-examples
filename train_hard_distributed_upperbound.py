@@ -33,6 +33,7 @@ random.seed(seed)
 torch.backends.cudnn.benchmark = False
 torch.backends.cudnn.deterministic = True
 
+
 def synchronize():
     """
     Helper function to synchronize (barrier) among all processes when
@@ -178,10 +179,10 @@ def train_net(noise_fraction,
             # print(len(data_loader))
             # Line 2 get batch of data
             try:
-                image, labels, _ = next(data)
+                image, labels, marks = next(data)
             except StopIteration:
                 data = iter(data_loader)
-                image, labels, _ = next(data)
+                image, labels, marks = next(data)
 
             try:
                 val_data, val_labels, _ = next(vali)
@@ -265,7 +266,10 @@ def train_net(noise_fraction,
             train_iter.append((y_predicted.int() == labels.int()).sum().item())
             
             beta = beta.cuda(local_rank)
-            mixup_labels = beta * labels + (1-beta) * y_predicted
+            if marks == 1:
+                mixup_labels = beta * labels + (1-beta) * y_predicted
+            else:
+                mixup_labels = labels
             # if local_rank == 0:
             #     print('beta: ', beta)
             #     print('labels: ', labels)

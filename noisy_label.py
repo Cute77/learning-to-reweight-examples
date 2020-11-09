@@ -2,7 +2,7 @@ import random
 
 # path = 'ISIC_2019_Training_GroundTruth_train_0.2.csv'
 path = 'ISIC_2019_Training_GroundTruth_sub5000_train.csv'
-noise_fraction = 0.8
+noise_fraction = 0.4
 
 fn = open(path, 'r+')
 data = []
@@ -46,7 +46,8 @@ for line in change_data:
         label[temp[0]] = '1.0'
         
     label = ",".join(label)
-    line = name + label + '\n'
+    # marked by "1": noisy label, changed label
+    line = "1 " + name + label + '\n'
     noisy_data.append(line)
 
 
@@ -56,11 +57,13 @@ for index in range(offset):
 
 
 for index in range(offset, len(data)):
-    datas.append(data[index])
+    # marked by "0": clean label, unchanged label
+    line = "0 " + data[index]
+    datas.append(line)
 
 random.shuffle(datas)
 
-pathtwo = 'ISIC_2019_Training_GroundTruth_sub5000_train_' + str(noise_fraction) + '.csv'
+pathtwo = 'ISIC_2019_Training_GroundTruth_marked5000_train_' + str(noise_fraction) + '.csv'
 ftwo = open(pathtwo, 'w')
 
 for line in datas:
