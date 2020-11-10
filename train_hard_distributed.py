@@ -113,17 +113,17 @@ def train_net(noise_fraction,
     # data_loader = get_mnist_loader(hyperparameters['batch_size'], classes=[9, 4], proportion=0.995, mode="train")
     # test_loader = get_mnist_loader(hyperparameters['batch_size'], classes=[9, 4], proportion=0.5, mode="test")
 
-    '''
-    val_data, val_labels, val_marks = next(iter(val_loader))
+    
+    val_data, val_labels, _ = next(iter(val_loader))
     if is_distributed:
         val_data = val_data.cuda(local_rank)
         val_labels = val_labels.cuda(local_rank)
     else:
         val_data = val_data.cuda()
         val_labels = val_labels.cuda()
-    '''
+    
     data = iter(data_loader)
-    vali = iter(val_loader)
+    # vali = iter(val_loader)
     loss = nn.CrossEntropyLoss(reduction="none")
     writer = SummaryWriter(comment=f'name_{args.figpath}')
     scheduler = StepLR(opt, step_size=50, gamma=0.5, last_epoch=load)
@@ -182,13 +182,13 @@ def train_net(noise_fraction,
             except StopIteration:
                 data = iter(data_loader)
                 image, labels, _ = next(data)
-
+            '''
             try:
                 val_data, val_labels, _ = next(vali)
             except StopIteration:
                 vali = iter(val_loader)
                 val_data, val_labels, _ = next(vali)                
-
+            '''
             # meta_net.load_state_dict(net.state_dict())
             if is_distributed:
                 image = image.cuda(local_rank)
@@ -198,8 +198,8 @@ def train_net(noise_fraction,
             else:
                 image = image.cuda()
                 labels = labels.cuda()
-                val_data = val_data.cuda()
-                val_labels = val_labels.cuda()                
+                # val_data = val_data.cuda()
+                # val_labels = val_labels.cuda()                
             image.requires_grad = False
             labels.requires_grad = False
             
