@@ -267,7 +267,11 @@ def train_net(noise_fraction,
             beta = beta.cuda(local_rank)
 
             mixup_labels = beta * labels + (1-beta) * y_predicted
-            
+            print("mixup: ", mixup_labels.size())
+            print("beta: ", beta.size())
+            print("labels: ", labels.size())
+            print("y_predicted: ", y_predicted)
+
             # if local_rank == 0:
             #     print('beta: ', beta)
             #     print('labels: ', labels)
