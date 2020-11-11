@@ -138,7 +138,7 @@ def train_net(noise_fraction,
     loss_train = []
     global_step = 0
     test_step = 0
-    mixup_labels = torch.ones([batch_size, 9]).cuda(local_rank)
+    mixup_labels = torch.ones([batch_size]).cuda(local_rank)
     mixup_labels.requires_grad = True
 
     if local_rank == 0:
