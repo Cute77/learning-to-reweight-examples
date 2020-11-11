@@ -115,7 +115,7 @@ def train_net(noise_fraction,
     # test_loader = get_mnist_loader(hyperparameters['batch_size'], classes=[9, 4], proportion=0.5, mode="test")
 
     
-    val_data, val_labels, val_marks = next(iter(val_loader))
+    val_data, val_labels, _ = next(iter(val_loader))
     if is_distributed:
         val_data = val_data.cuda(local_rank)
         val_labels = val_labels.cuda(local_rank)
@@ -124,7 +124,7 @@ def train_net(noise_fraction,
         val_labels = val_labels.cuda()
     
     data = iter(data_loader)
-    vali = iter(val_loader)
+    # vali = iter(val_loader)
     loss = nn.CrossEntropyLoss(reduction="none")
     writer = SummaryWriter(comment=f'name_{args.figpath}')
     scheduler = StepLR(opt, step_size=100, gamma=0.5, last_epoch=load)
@@ -194,13 +194,13 @@ def train_net(noise_fraction,
             if is_distributed:
                 image = image.cuda(local_rank)
                 labels = labels.cuda(local_rank)
-                val_data = val_data.cuda(local_rank)
-                val_labels = val_labels.cuda(local_rank)
+                # val_data = val_data.cuda(local_rank)
+                # val_labels = val_labels.cuda(local_rank)
             else:
                 image = image.cuda()
                 labels = labels.cuda()
-                val_data = val_data.cuda()
-                val_labels = val_labels.cuda()                
+                # val_data = val_data.cuda()
+                # val_labels = val_labels.cuda()                
             image.requires_grad = False
             labels.requires_grad = False
             
@@ -266,10 +266,11 @@ def train_net(noise_fraction,
             train_iter.append((y_predicted.int() == labels.int()).sum().item())
             
             beta = beta.cuda(local_rank)
-            if marks == 1:
-                mixup_labels = beta * labels + (1-beta) * y_predicted
-            else:
-                mixup_labels = labels
+            for k in range(marks.shape[0]):
+                if marks[k] == 1:
+                    mixup_labels[k] = beta[k] * labels[k] + (1-beta[k]) * y_predicted[k]
+                else:
+                    mixup_labels[k] = labels[k]
             # if local_rank == 0:
             #     print('beta: ', beta)
             #     print('labels: ', labels)

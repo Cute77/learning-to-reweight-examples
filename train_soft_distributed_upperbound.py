@@ -298,10 +298,17 @@ def train_net(noise_fraction,
             # print(beta)
             # print('beta: ', beta.size())
             # print('mixuplabel: ', mixup_labels.size())
+            for k in range(marks.shape[0]):
+                if marks[k] == 1:
+                    mixup_labels[k][:] = beta * mixup_labels[k][:] + (1-beta) * prob[k][:]
+                else:
+                    mixup_labels[k][:] = labels[k][:]
+            '''
             if marks == 1:
                 mixup_labels = beta * mixup_labels + (1-beta) * prob
             else:
                 mixup_labels = labels
+            '''
             # cost = loss(y_f_hat, mixup_labels)
             y_f_hat = torch.softmax(y_f_hat, 1)
             cost = -1 * torch.log(y_f_hat+1e-10) * mixup_labels

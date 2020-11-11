@@ -77,6 +77,8 @@ def train_net(noise_fraction,
     lr = lr * num_gpus
     
     path = 'baseline/' + fig_path + '_' + str(load) + '_model.pth'
+    # path = 'baseline/' + fig_path + '/' + str(load) + '_model.pth'
+    os.mkdir(fig_path)
     if is_distributed:
         torch.cuda.set_device(local_rank) 
         # print("local_rank:", local_rank)
@@ -116,7 +118,7 @@ def train_net(noise_fraction,
     # data_loader = get_mnist_loader(hyperparameters['batch_size'], classes=[9, 4], proportion=0.995, mode="train")
     # test_loader = get_mnist_loader(hyperparameters['batch_size'], classes=[9, 4], proportion=0.5, mode="test")
 
-    val_data, val_labels = next(iter(val_loader))
+    val_data, val_labels, _, val_name = next(iter(val_loader))
     if is_distributed:
         val_data = val_data.cuda(local_rank)
         val_labels = val_labels.cuda(local_rank)
@@ -138,8 +140,16 @@ def train_net(noise_fraction,
     loss_train = []
     global_step = 0
     test_step = 0
-    mixup_labels = torch.ones([batch_size, 9]).cuda(local_rank)
+    # mixup_labels = torch.ones([batch_size, 9]).cuda(local_rank)
+    _, mixup_labels, _, mixup_names = next(iter(data_loader))
+    mixup_labels = mixup_labels.cuda(local_rank)
     mixup_labels.requires_grad = True
+
+    dict = {}
+    for i in range(len(data_loader)):
+        _, labels, _, names = next(data)
+        for k in range(names.shape[0]):
+            dict[mixup_names[k]] = mixup_labels[k]
 
     if local_rank == 0:
         logging.info(f'''Starting training:
@@ -287,7 +297,16 @@ def train_net(noise_fraction,
             # print(beta)
             # print('beta: ', beta.size())
             # print('mixuplabel: ', mixup_labels.size())
-            mixup_labels = beta * mixup_labels + (1-beta) * prob
+            # mixup_labels = beta * mixup_labels + (1-beta) * prob
+
+            for k in range(names.shape[0]):
+                labels = dict[names[k]]
+
+            mixup_labels = beta * labels + (1-beta) * prob
+
+            for k in range(names.shape[0]):
+                dict[names[k]] = mixup_labels
+
             # cost = loss(y_f_hat, mixup_labels)
             y_f_hat = torch.softmax(y_f_hat, 1)
             cost = -1 * torch.log(y_f_hat+1e-10) * mixup_labels
