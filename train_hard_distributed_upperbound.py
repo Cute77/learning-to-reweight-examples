@@ -138,7 +138,7 @@ def train_net(noise_fraction,
     loss_train = []
     global_step = 0
     test_step = 0
-    mixup_labels = torch.ones([32, 9]).cuda(local_rank)
+    mixup_labels = torch.ones([batch_size, 9]).cuda(local_rank)
     mixup_labels.requires_grad = True
 
     if local_rank == 0:
@@ -266,6 +266,9 @@ def train_net(noise_fraction,
             train_iter.append((y_predicted.int() == labels.int()).sum().item())
             
             beta = beta.cuda(local_rank)
+            print("label: ", labels.size())
+            print("beta: ", beta.size())
+            print("y_prediced: ", y_predicted.size())
             for k in range(marks.shape[0]):
                 if marks[k] == 1:
                     mixup_labels[k] = beta[k] * labels[k] + (1-beta[k]) * y_predicted[k]
