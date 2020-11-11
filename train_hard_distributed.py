@@ -265,7 +265,9 @@ def train_net(noise_fraction,
             train_iter.append((y_predicted.int() == labels.int()).sum().item())
             
             beta = beta.cuda(local_rank)
+
             mixup_labels = beta * labels + (1-beta) * y_predicted
+            
             # if local_rank == 0:
             #     print('beta: ', beta)
             #     print('labels: ', labels)
