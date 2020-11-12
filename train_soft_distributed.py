@@ -10,7 +10,7 @@ from tqdm import tqdm
 import IPython
 import gc
 import torchvision
-from datasets import BasicDataset
+from datasets_soft import BasicDataset
 from torch.utils.data import DataLoader
 import numpy as np
 import os
@@ -117,15 +117,17 @@ def train_net(noise_fraction,
     
     # data_loader = get_mnist_loader(hyperparameters['batch_size'], classes=[9, 4], proportion=0.995, mode="train")
     # test_loader = get_mnist_loader(hyperparameters['batch_size'], classes=[9, 4], proportion=0.5, mode="test")
-
-    val_data, val_labels, _, val_name = next(iter(val_loader))
+    '''
+    val_data, val_labels, _, _ = next(iter(val_loader))
     if is_distributed:
         val_data = val_data.cuda(local_rank)
         val_labels = val_labels.cuda(local_rank)
     else:
         val_data = val_data.cuda()
         val_labels = val_labels.cuda()
+    '''
 
+    vali = iter(val_loader)
     data = iter(data_loader)
     loss = nn.CrossEntropyLoss(reduction="none")
     writer = SummaryWriter(comment=f'name_{args.figpath}')
@@ -141,7 +143,7 @@ def train_net(noise_fraction,
     global_step = 0
     test_step = 0
     # mixup_labels = torch.ones([batch_size, 9]).cuda(local_rank)
-    _, mixup_labels, _, mixup_names = next(iter(data_loader))
+    _, mixup_labels, _, _ = next(iter(data_loader))
     mixup_labels = mixup_labels.cuda(local_rank)
     mixup_labels.requires_grad = True
 
@@ -149,7 +151,7 @@ def train_net(noise_fraction,
     for i in range(len(data_loader)):
         _, labels, _, names = next(data)
         for k in range(names.shape[0]):
-            dict[mixup_names[k]] = mixup_labels[k]
+            dict[names[k]] = labels[k]
 
     if local_rank == 0:
         logging.info(f'''Starting training:
@@ -189,15 +191,23 @@ def train_net(noise_fraction,
             # print(len(data_loader))
             # Line 2 get batch of data
             try:
-                image, labels = next(data)
+                image, labels, _, names = next(data)
             except StopIteration:
                 data = iter(data_loader)
-                image, labels = next(data)
+                image, labels, _, names = next(data)
+
+            try:
+                val_data, val_labels, _, _ = next(vali)
+            except StopIteration:
+                vali = iter(val_loader)
+                val_data, val_labels, _, _ = next(vali)
 
             # meta_net.load_state_dict(net.state_dict())
             if is_distributed:
                 image = image.cuda(local_rank)
                 labels = labels.cuda(local_rank)
+                val_data = val_data.cuda(local_rank)
+                val_labels = val_labels.cuda(local_rank)
             else:
                 image = image.cuda()
                 labels = labels.cuda()                
@@ -300,12 +310,12 @@ def train_net(noise_fraction,
             # mixup_labels = beta * mixup_labels + (1-beta) * prob
 
             for k in range(names.shape[0]):
-                labels = dict[names[k]]
+                labels[k] = dict[names[k]]
 
             mixup_labels = beta * labels + (1-beta) * prob
 
             for k in range(names.shape[0]):
-                dict[names[k]] = mixup_labels
+                dict[names[k]] = mixup_labels[k]
 
             # cost = loss(y_f_hat, mixup_labels)
             y_f_hat = torch.softmax(y_f_hat, 1)
