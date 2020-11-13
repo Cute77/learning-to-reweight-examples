@@ -314,12 +314,12 @@ def train_net(noise_fraction,
             # print('mixuplabel: ', mixup_labels.size())
             # mixup_labels = beta * mixup_labels + (1-beta) * prob
 
-            for k in range(names.shape[0]):
+            for k in range(labels.shape[0]):
                 label[k] = dict[names[k]]
 
             mixup_labels = beta * label + (1-beta) * prob
 
-            for k in range(names.shape[0]):
+            for k in range(labels.shape[0]):
                 dict[names[k]] = mixup_labels[k]
 
             # cost = loss(y_f_hat, mixup_labels)
