@@ -78,8 +78,10 @@ def train_net(noise_fraction,
     lr = lr * num_gpus
     
     # path = 'baseline/' + fig_path + '_' + str(load) + '_model.pth'
+    dir = 'baseline/' + fig_path
     path = 'baseline/' + fig_path + '/' + str(load) + '_model.pth'
-    os.mkdir(fig_path)
+    if not os.path.exists(dir):
+        os.mkdir(dir)
     if is_distributed:
         torch.cuda.set_device(local_rank) 
         # print("local_rank:", local_rank)
