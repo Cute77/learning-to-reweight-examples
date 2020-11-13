@@ -150,11 +150,10 @@ def train_net(noise_fraction,
     dict = {}
     for i in range(len(data_loader)):
         _, labels, _, names = next(data)
+        label = torch.zeros([batch_size, 9]).cuda(local_rank)
         for k in range(names.shape[0]):
-            label = torch.ones([batch_size, 9]).cuda(local_rank)
-            for i in range(label.shape[0]):
-                label[i][int(labels[i])] = 1 
-                dict[names[k]] = label[k]
+            label[k][int(labels[k])] = 1 
+            dict[names[k]] = label[k]
 
     if local_rank == 0:
         logging.info(f'''Starting training:
@@ -313,9 +312,9 @@ def train_net(noise_fraction,
             # mixup_labels = beta * mixup_labels + (1-beta) * prob
 
             for k in range(names.shape[0]):
-                labels[k] = dict[names[k]]
+                label[k] = dict[names[k]]
 
-            mixup_labels = beta * labels + (1-beta) * prob
+            mixup_labels = beta * label + (1-beta) * prob
 
             for k in range(names.shape[0]):
                 dict[names[k]] = mixup_labels[k]
