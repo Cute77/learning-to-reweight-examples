@@ -1,3 +1,4 @@
+import os
 import sys
 import torch
 import torch.nn as nn
@@ -76,8 +77,8 @@ def train_net(noise_fraction,
     is_distributed = num_gpus > 1
     lr = lr * num_gpus
     
-    path = 'baseline/' + fig_path + '_' + str(load) + '_model.pth'
-    # path = 'baseline/' + fig_path + '/' + str(load) + '_model.pth'
+    # path = 'baseline/' + fig_path + '_' + str(load) + '_model.pth'
+    path = 'baseline/' + fig_path + '/' + str(load) + '_model.pth'
     os.mkdir(fig_path)
     if is_distributed:
         torch.cuda.set_device(local_rank) 
@@ -253,7 +254,7 @@ def train_net(noise_fraction,
             #     beta = beta_tilde
             beta = beta_tilde
 
-            if epoch == 11 or epoch == 21 or epoch == 31 or epoch == 101 or epoch == 151:
+            if epoch % 5 == 0:
                 '''
                 for k in range(w.shape[0]):
                     if w[k] < 0.05 and small < 100:
@@ -384,14 +385,14 @@ def train_net(noise_fraction,
         
         scheduler.step()
 
-        if (epoch == 11 or epoch == 21 or epoch == 31 or epoch == 101 or epoch == 151) and local_rank == 0:
+        if epoch % 5 == 0 and local_rank == 0:
             bs = bs.cpu().numpy().tolist()
             plt.hist(x=bs, bins=20)
-            plt.savefig(fig_path+'_'+str(epoch)+'_beta.png')
+            plt.savefig('baseline/'+fig_path+'/'+str(epoch)+'_beta.png')
             print('beta saved')
 
-        if is_distributed and local_rank == 0 and epoch % 5 == 0:
-            path = 'baseline/' + fig_path + '_' + str(epoch) + '_model.pth'
+        if is_distributed and local_rank == 0 and epoch % 10 == 0:
+            path = 'baseline/' + fig_path + '/' + str(epoch) + '_model.pth'
             torch.save(net.state_dict(), path) 
 
         if is_distributed and local_rank == 0:
@@ -411,8 +412,8 @@ def train_net(noise_fraction,
             writer.add_scalar('EpochAccuracy/test', correct_num/test_num, epoch)
             acc_test.append(correct_num/test_num)
 
-        if not is_distributed and epoch % 5 == 0:
-            path = 'baseline/' + fig_path + '_' + str(epoch) + '_model.pth'
+        if not is_distributed and epoch % 10 == 0:
+            path = 'baseline/' + fig_path + '/' + str(epoch) + '_model.pth'
             torch.save(net.state_dict(), path)
 
         if not is_distributed:
