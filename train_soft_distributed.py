@@ -151,7 +151,10 @@ def train_net(noise_fraction,
     for i in range(len(data_loader)):
         _, labels, _, names = next(data)
         for k in range(names.shape[0]):
-            dict[names[k]] = labels[k]
+            label = torch.ones([batch_size, 9]).cuda(local_rank)
+            for i in range(label.shape[0]):
+                label[i][int(labels[i])] = 1 
+                dict[names[k]] = label[k]
 
     if local_rank == 0:
         logging.info(f'''Starting training:
