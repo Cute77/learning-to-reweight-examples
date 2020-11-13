@@ -147,8 +147,8 @@ def train_net(noise_fraction,
     test_step = 0
     # mixup_labels = torch.ones([batch_size, 9]).cuda(local_rank)
     _, mixup_labels, _, _ = next(iter(data_loader))
-    mixup_labels = mixup_labels.cuda(local_rank)
-    mixup_labels.requires_grad = True
+    # mixup_labels = mixup_labels.cuda(local_rank)
+    # mixup_labels.requires_grad = True
 
     dict = {}
     for i in range(len(data_loader)):
