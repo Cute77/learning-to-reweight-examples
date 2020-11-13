@@ -154,7 +154,7 @@ def train_net(noise_fraction,
     for i in range(len(data_loader)):
         _, labels, _, names = next(data)
         label = torch.zeros([batch_size, 9]).cuda(local_rank)
-        for k in range(names.shape[0]):
+        for k in range(labels.shape[0]):
             label[k][int(labels[k])] = 1 
             dict[names[k]] = label[k]
 
