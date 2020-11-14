@@ -73,7 +73,10 @@ def train_net(noise_fraction,
     is_distributed = num_gpus > 1
     lr = lr * num_gpus
     
-    path = 'baseline/' + fig_path + '_' + str(load) + '_model.pth'
+    dir = 'baseline/' + fig_path
+    path = 'baseline/' + fig_path + '/' + str(load) + '_model.pth'
+    if not os.path.exists(dir):
+        os.mkdir(dir)
     if is_distributed:
         torch.cuda.set_device(local_rank) 
         # print("local_rank:", local_rank)
@@ -137,8 +140,10 @@ def train_net(noise_fraction,
     loss_train = []
     global_step = 0
     test_step = 0
-    mixup_labels = torch.ones([32, 9]).cuda(local_rank)
-    mixup_labels.requires_grad = True
+    # mixup_labels = torch.ones([batch_size, 9]).cuda(local_rank)
+    # mixup_labels.requires_grad = True
+    w = torch.ones([batch_size]).cuda(local_rank)
+    beta = torch.ones([batch_size]).cuda(local_rank)
 
     if local_rank == 0:
         logging.info(f'''Starting training:
@@ -173,6 +178,8 @@ def train_net(noise_fraction,
         test_num = 0
         correct_num = 0
         bs = torch.ones([batch_size]).cuda(local_rank)
+        pseudo = torch.ones([batch_size]).cuda(local_rank)
+        ws = torch.ones([batch_size]).cuda(local_rank)
         for i in range(len(data_loader)):
             # print(i)
             # print('train: ', len(train))
@@ -204,56 +211,107 @@ def train_net(noise_fraction,
             image.requires_grad = False
             labels.requires_grad = False
             
-            with higher.innerloop_ctx(net, opt) as (meta_net, meta_opt):
-                y_f_hat = meta_net(image)
-                cost = loss(y_f_hat, labels)
-                # if local_rank == 0:
-                #     print('cost: ', cost)
-                eps = torch.zeros(cost.size()).cuda(local_rank)
-                eps = eps.requires_grad_()
-                # if local_rank == 0:
-                #     print('eps: ', eps)
-                l_f_meta = torch.sum(cost * eps)
-                # if local_rank == 0:
-                #     print('l_f_meta: ', l_f_meta)
-                # meta_net.zero_grad()
-                nn.utils.clip_grad_norm_(l_f_meta, 0.25, norm_type=2)
-                meta_opt.step(l_f_meta)
-                # grads = torch.autograd.grad(l_f_meta, (meta_net.parameters()), create_graph=True, retain_graph=True)
-                # meta_net.module.update_parameters(lr, source_parameters=grads)
-                y_g_hat = meta_net(val_data)
-                # if local_rank == 0:
-                #     print('y_g_hat: ', y_g_hat)
-        
-                #loss = nn.CrossEntropyLoss()
-                l_g_meta = torch.mean(loss(y_g_hat, val_labels))
-                # if local_rank == 0:
-                #     print('l_g_meta: ', l_g_meta)
-                # print(eps)
-                # l_g_meta = F.binary_cross_entropy_with_logits(y_g_hat, val_labels)
+            if epoch % 2 == 0:
+                with higher.innerloop_ctx(net, opt) as (meta_net, meta_opt):
+                    y_f_hat = meta_net(image)
+                    cost = loss(y_f_hat, labels)
+                    # if local_rank == 0:
+                    #     print('cost: ', cost)
+                    eps = torch.zeros(cost.size()).cuda(local_rank)
+                    eps = eps.requires_grad_()
+                    # if local_rank == 0:
+                    #     print('eps: ', eps)
+                    l_f_meta = torch.sum(cost * eps)
+                    # if local_rank == 0:
+                    #     print('l_f_meta: ', l_f_meta)
+                    # meta_net.zero_grad()
+                    nn.utils.clip_grad_norm_(l_f_meta, 0.25, norm_type=2)
+                    meta_opt.step(l_f_meta)
+                    # grads = torch.autograd.grad(l_f_meta, (meta_net.parameters()), create_graph=True, retain_graph=True)
+                    # meta_net.module.update_parameters(lr, source_parameters=grads)
+                    y_g_hat = meta_net(val_data)
+                    # if local_rank == 0:
+                    #     print('y_g_hat: ', y_g_hat)
+            
+                    #loss = nn.CrossEntropyLoss()
+                    l_g_meta = torch.mean(loss(y_g_hat, val_labels))
+                    # if local_rank == 0:
+                    #     print('l_g_meta: ', l_g_meta)
+                    # print(eps)
+                    # l_g_meta = F.binary_cross_entropy_with_logits(y_g_hat, val_labels)
 
-                grad_eps = torch.autograd.grad(l_g_meta, eps, only_inputs=True, create_graph=True, retain_graph=True, allow_unused=True)[0].detach()
-                # if local_rank == 0:
-                #     print("grad_eps: ", grad_eps)
-                # print(grad_eps)
-                # Line 11 computing and normalizing the weights
+                    grad_eps = torch.autograd.grad(l_g_meta, eps, only_inputs=True, create_graph=True, retain_graph=True, allow_unused=True)[0].detach()
+                    # if local_rank == 0:
+                    #     print("grad_eps: ", grad_eps)
+                    # print(grad_eps)
+                    # Line 11 computing and normalizing the weights
 
-            beta_tilde = torch.sigmoid(-grad_eps)
-            # print(w_tilde)
-            # norm_c = torch.sum(beta_tilde)
+                beta_tilde = torch.sigmoid(-grad_eps)
+                # print(w_tilde)
+                # norm_c = torch.sum(beta_tilde)
 
-            # if norm_c != 0:
-            #     beta = beta_tilde / norm_c
-            # else:
-            #     beta = beta_tilde
-            beta = beta_tilde
-            '''
-            if epoch == 11 or epoch == 21 or epoch == 31 or epoch == 101 or epoch == 151:                 
-                if i == 0:
-                    bs = beta
+                # if norm_c != 0:
+                #     beta = beta_tilde / norm_c
+                # else:
+                #     beta = beta_tilde
+                beta = beta_tilde
+                beta = beta.cuda(local_rank)
+
+                if epoch % 5 == 0:                 
+                    if i == 0:
+                        bs = beta
+                        pseudo = 1 - beta
+                    else:
+                        bs = torch.cat([bs, beta])
+                        pseudo = torch.cat([pseudo, 1-beta])
+            
+
+            if epoch % 2 != 0:
+                with higher.innerloop_ctx(net, opt) as (meta_net, meta_opt):
+                    y_f_hat = meta_net(image)
+                    cost = loss(y_f_hat, labels)
+                    eps = torch.zeros(cost.size()).cuda()
+                    eps = eps.requires_grad_()
+                    l_f_meta = torch.sum(cost * eps)
+                    # meta_net.zero_grad()
+                    meta_opt.step(l_f_meta)
+                    # grads = torch.autograd.grad(l_f_meta, (meta_net.parameters()), create_graph=True, retain_graph=True)
+                    # meta_net.module.update_parameters(lr, source_parameters=grads)
+                    y_g_hat = meta_net(val_data)
+            
+                    #loss = nn.CrossEntropyLoss()
+                    l_g_meta = torch.mean(loss(y_g_hat, val_labels))
+                    # print(l_g_meta)
+                    # print(eps)
+                    # l_g_meta = F.binary_cross_entropy_with_logits(y_g_hat, val_labels)
+
+                    grad_eps = torch.autograd.grad(l_g_meta, eps, only_inputs=True, allow_unused=True)[0].detach()
+                    #print("epos: ", type(grad_eps))
+                    # print(grad_eps)
+                    # Line 11 computing and normalizing the weights
+
+                # w_tilde = torch.clamp(-grad_eps, min=0)
+                w_tilde = torch.sigmoid(-grad_eps)
+                # print('w_tilde: ', w_tilde)
+                norm_c = torch.sum(w_tilde)
+
+                if norm_c != 0:
+                    w = w_tilde / norm_c
                 else:
-                    bs = torch.cat([bs, beta])
-            '''
+                    w = w_tilde
+
+                # print(type(w))
+                # print(type(ws))
+                # print(epoch)
+                
+                if epoch % 5 == 0:              
+                    if i == 0:
+                        # print('i:', i)
+                        ws = w
+                    else:
+                        # print('i: ', i)
+                        ws = torch.cat([ws, w])
+                    
             # Lines 12 - 14 computing for the loss with the computed weights
             # and then perform a parameter update
             # with torch.no_grad():
@@ -264,8 +322,6 @@ def train_net(noise_fraction,
             num_y = num_y + labels.size(0) 
             writer.add_scalar('StepAccuracy/train', ((y_predicted.int() == labels.int()).sum().item()/labels.size(0)), global_step)
             train_iter.append((y_predicted.int() == labels.int()).sum().item())
-            
-            beta = beta.cuda(local_rank)
 
             mixup_labels = beta * labels + (1-beta) * y_predicted
 
@@ -277,8 +333,7 @@ def train_net(noise_fraction,
             # mixup_labels = mixup_labels.cpu()
             # mixup_labels = torch.LongTensor(mixup_labels).cuda(local_rank)
             cost = loss(y_f_hat, mixup_labels.long())
-            w = torch.ones(cost.size()).cuda(local_rank)
-            # cost = F.binary_cross_entropy_with_logits(y_f_hat, labels, reduce=False)
+            # w = torch.ones(cost.size()).cuda(local_rank)
             l_f = torch.sum(cost * w)
             net_losses.append(l_f.item())
             writer.add_scalar('StepLoss/train', l_f.item(), global_step)
@@ -336,15 +391,19 @@ def train_net(noise_fraction,
 
         scheduler.step()
 
-        '''
-        if (epoch == 11 or epoch == 21 or epoch == 31 or epoch == 101 or epoch == 151) and local_rank == 0:
+        if epoch % 5 == 0 and local_rank == 0:
             bs = bs.cpu().numpy().tolist()
-            plt.hist(x=bs, bins=20)
-            plt.savefig(fig_path+'_'+str(epoch)+'_beta.png')
+            plt.hist(x=bs, bins=50)
+            plt.savefig(dir+'/'+str(epoch)+'_beta.png')
             print('beta saved')
-        '''
+
+            ws = ws.cpu().numpy().tolist()
+            plt.hist(x=ws, bins=50)
+            plt.savefig(dir+'/'+str(epoch)+'_weight.png')
+            print('weight saved')
+        
         if is_distributed and local_rank == 0 and epoch % 5 == 0:
-            path = 'baseline/' + fig_path + '_' + str(epoch) + '_model.pth'
+            path = 'baseline/' + fig_path + '/' + str(epoch) + '_model.pth'
             torch.save(net.state_dict(), path) 
 
         if is_distributed and local_rank == 0:
@@ -365,7 +424,7 @@ def train_net(noise_fraction,
             acc_test.append(correct_num/test_num)
 
         if not is_distributed and epoch % 5 == 0:
-            path = 'baseline/' + fig_path + '_' + str(epoch) + '_model.pth'
+            path = 'baseline/' + fig_path + '/' + str(epoch) + '_model.pth'
             torch.save(net.state_dict(), path)
 
         if not is_distributed:
@@ -442,7 +501,7 @@ def get_args():
                         help='Fig Path', dest='figpath')
     parser.add_argument('-r', '--local_rank', metavar='RA', type=int, nargs='?', default=0,
                         help='from torch.distributed.launch', dest='local_rank')
-    parser.add_argument('-o', '--load', metavar='LO', type=int, nargs='?', default=0,
+    parser.add_argument('-o', '--load', metavar='LO', type=int, nargs='?', default=-1,
                         help='load epoch', dest='load')
     return parser.parse_args()
 
