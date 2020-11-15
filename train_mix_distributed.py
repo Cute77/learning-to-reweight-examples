@@ -211,7 +211,7 @@ def train_net(noise_fraction,
             image.requires_grad = False
             labels.requires_grad = False
             
-            if epoch % 2 == 0:
+            if i % 2 == 0:
                 with higher.innerloop_ctx(net, opt) as (meta_net, meta_opt):
                     y_f_hat = meta_net(image)
                     cost = loss(y_f_hat, labels)
@@ -266,7 +266,7 @@ def train_net(noise_fraction,
                         pseudo = torch.cat([pseudo, 1-beta])
             
 
-            if epoch % 2 != 0:
+            if i % 2 != 0:
                 with higher.innerloop_ctx(net, opt) as (meta_net, meta_opt):
                     y_f_hat = meta_net(image)
                     cost = loss(y_f_hat, labels)
@@ -401,6 +401,11 @@ def train_net(noise_fraction,
             plt.hist(x=ws, bins=50)
             plt.savefig(dir+'/'+str(epoch)+'_weight.png')
             print('weight saved')
+
+            pseudo = pseudo.cpu().numpy().tolist()
+            plt.hist(x=pseudo, bins=50)
+            plt.savefig(dir+'/'+str(epoch)+'_pseudo.png')
+            print('pseudo saved')
         
         if is_distributed and local_rank == 0 and epoch % 5 == 0:
             path = 'baseline/' + fig_path + '/' + str(epoch) + '_model.pth'
