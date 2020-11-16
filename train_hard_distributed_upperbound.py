@@ -247,13 +247,13 @@ def train_net(noise_fraction,
             # else:
             #     beta = beta_tilde
             beta = beta_tilde
-            '''
-            if epoch == 11 or epoch == 21 or epoch == 31 or epoch == 101 or epoch == 151:                 
+            
+            if epoch == 11 or epoch == 51 or epoch == 101 or epoch == 151 or epoch == 201:                 
                 if i == 0:
                     bs = beta
                 else:
                     bs = torch.cat([bs, beta])
-            '''
+            
             # Lines 12 - 14 computing for the loss with the computed weights
             # and then perform a parameter update
             # with torch.no_grad():
@@ -341,13 +341,13 @@ def train_net(noise_fraction,
 
         scheduler.step()
 
-        '''
-        if (epoch == 11 or epoch == 21 or epoch == 31 or epoch == 101 or epoch == 151) and local_rank == 0:
+        
+        if (epoch == 11 or epoch == 51 or epoch == 101 or epoch == 151 or epoch == 201) and local_rank == 0:
             bs = bs.cpu().numpy().tolist()
             plt.hist(x=bs, bins=20)
             plt.savefig(fig_path+'_'+str(epoch)+'_beta.png')
             print('beta saved')
-        '''
+        
         if is_distributed and local_rank == 0 and epoch % 5 == 0:
             path = 'baseline/' + fig_path + '_' + str(epoch) + '_model.pth'
             torch.save(net.state_dict(), path) 
