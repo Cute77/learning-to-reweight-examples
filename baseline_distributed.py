@@ -21,7 +21,6 @@ from torch.utils.data import distributed
 import matplotlib
 import matplotlib.pyplot as plt
 from tensorboardX import SummaryWriter
-import higher 
 from torch.optim.lr_scheduler import StepLR
 from skimage.io import imread, imsave
 import random
