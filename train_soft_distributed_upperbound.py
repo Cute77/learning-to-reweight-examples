@@ -300,7 +300,8 @@ def train_net(noise_fraction,
             # print('mixuplabel: ', mixup_labels.size())
             for k in range(marks.shape[0]):
                 if marks[k] == 1:
-                    mixup_labels[k][:] = beta * mixup_labels[k][:] + (1-beta) * prob[k][:]
+                    # mixup_labels[k][:] = beta * mixup_labels[k][:] + (1-beta) * prob[k][:]
+                    mixup_labels[k] = prob[k]
                 else:
                     mixup_labels[k][:] = labels[k][:]
             '''

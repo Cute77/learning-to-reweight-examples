@@ -271,7 +271,8 @@ def train_net(noise_fraction,
             # print("y_prediced: ", y_predicted.size())
             for k in range(marks.shape[0]):
                 if marks[k] == 1:
-                    mixup_labels[k] = beta[k] * labels[k] + (1-beta[k]) * y_predicted[k]
+                    # mixup_labels[k] = beta[k] * labels[k] + (1-beta[k]) * y_predicted[k]
+                    mixup_labels[k] = y_predicted[k]
                 else:
                     mixup_labels[k] = labels[k]
             # if local_rank == 0:

@@ -17,7 +17,19 @@ import matplotlib
 import matplotlib.pyplot as plt
 from tensorboardX import SummaryWriter
 import logging
+import torch.distributed as dist
+from torch.utils.data import distributed
+import os
+import random
 
+seed = 1
+torch.manual_seed(seed)
+torch.cuda.manual_seed(seed) 
+torch.cuda.manual_seed_all(seed)
+np.random.seed(seed)  
+random.seed(seed)   
+torch.backends.cudnn.benchmark = False
+torch.backends.cudnn.deterministic = True
 
 def to_var(x, requires_grad=True):
     if torch.cuda.is_available():
@@ -53,14 +65,38 @@ def get_args():
                         help='Noise Fraction', dest='noise_fraction')
     parser.add_argument('-f', '--fig-path', metavar='FP', type=str, nargs='?', default='baseline',
                         help='Fig Path', dest='figpath')
+    parser.add_argument('-r', '--local_rank', metavar='RA', type=int, nargs='?', default=0,
+                        help='from torch.distributed.launch', dest='local_rank')
+    parser.add_argument('-o', '--load', metavar='LO', type=int, nargs='?', default=0,
+                        help='load epoch', dest='load')
 
     return parser.parse_args()
 
 
 args = get_args()
 lr = args.lr
+local_rank = args.local_rank
+load = args.load
+epochs = args.epochs
+fig_path = args.fig_path
 net, opt = build_model(lr)
 
+num_gpus = int(os.environ["WORLD_SIZE"]) if "WORLD_SIZE" in os.environ else 1
+is_distributed = num_gpus > 1
+lr = lr * num_gpus
+dir = 'baseline/' + fig_path
+path = 'baseline/' + fig_path + '/' + str(load) + '_model.pth'
+if not os.path.exists(dir):
+    os.mkdir(dir)
+
+net = torch.nn.parallel.DistributedDataParallel(
+    net, device_ids=[local_rank], output_device=local_rank, find_unused_parameters=True, 
+)
+if os.path.isfile(path) and load > 0:
+    logging.info(f'''Continue''')
+    net.load_state_dict(torch.load(path))
+
+scheduler = StepLR(opt, step_size=50, gamma=0.5, last_epoch=load)
 writer = SummaryWriter(comment=f'name_{args.figpath}')
 
 logging.info(f'''Starting training:
@@ -90,7 +126,9 @@ train = BasicDataset(imgs_dir=args.imgs_dir, noise_fraction=args.noise_fraction,
 # train = BasicDataset(imgs_dir=args.imgs_dir, mode='base')
 test = BasicDataset(imgs_dir=args.imgs_dir, mode='test')
 
-data_loader = DataLoader(train, batch_size=args.batch_size, shuffle=True, num_workers=8, pin_memory=True)
+train_sampler = distributed.DistributedSampler(train, num_replicas=num_gpus, rank=local_rank) if is_distributed else None
+
+data_loader = DataLoader(train, batch_size=args.batch_size, shuffle=True, num_workers=8, pin_memory=True, sampler=train_sampler)
 test_loader = DataLoader(test, batch_size=args.batch_size, shuffle=False, num_workers=8, pin_memory=True)
 
 data = iter(data_loader)
@@ -100,27 +138,28 @@ loss = nn.CrossEntropyLoss()
 test_num = 0
 correct_num = 0
 
-for epoch in range(args.epochs):
+for epoch in range(load+1, epochs):
     epoch_loss = 0
     correct_y = 0
     num_y = 0
     test_num = 0
     correct_num = 0
-    '''
-    if epoch % 10 == 0:
-        lr = lr/2
-    opt = torch.optim.SGD(net.params(), lr, weight_decay=1e-4)
-    '''
-    for i in tqdm(range(len(train))):
+
+    for i in range(len(data_loader)):
     # for i in range(8000):
         net.train()
         try:
-            image, labels = next(data)
+            image, labels, _ = next(data)
         except StopIteration:
             data = iter(data_loader)
-            image, labels = next(data)
+            image, labels, _ = next(data)
         # image, labels = next(iter(data_loader))
 
+        if is_distributed:
+            image = image.cuda(local_rank)
+            labels = labels.cuda(local_rank)
+            val_data = val_data.cuda(local_rank)
+            val_labels = val_labels.cuda(local_rank)
         image = to_var(image, requires_grad=False)
         labels = to_var(labels, requires_grad=False)
 

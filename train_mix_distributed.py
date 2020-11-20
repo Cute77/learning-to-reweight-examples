@@ -210,7 +210,7 @@ def train_net(noise_fraction,
             image.requires_grad = False
             labels.requires_grad = False
             
-            if i % 2 == 0:
+            if i % 2 != 0:
                 with higher.innerloop_ctx(net, opt) as (meta_net, meta_opt):
                     y_f_hat = meta_net(image)
                     cost = loss(y_f_hat, labels)
@@ -265,7 +265,7 @@ def train_net(noise_fraction,
                         pseudo = torch.cat([pseudo, 1-beta])
             
 
-            if i % 2 != 0:
+            if i % 2 == 0:
                 with higher.innerloop_ctx(net, opt) as (meta_net, meta_opt):
                     y_f_hat = meta_net(image)
                     cost = loss(y_f_hat, labels)
