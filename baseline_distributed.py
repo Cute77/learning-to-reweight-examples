@@ -116,7 +116,7 @@ def train_net(noise_fraction,
 
     data = iter(data_loader)
     loss = nn.CrossEntropyLoss()
-    writer = SummaryWriter(comment=f'name_{fig_path}')
+    writer = SummaryWriter(comment=fig_path)
     scheduler = StepLR(opt, step_size=50, gamma=0.5, last_epoch=load)
     
     plot_step = 10
