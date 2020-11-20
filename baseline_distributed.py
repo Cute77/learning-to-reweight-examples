@@ -199,6 +199,7 @@ def train_net(noise_fraction,
                     _, predicted = torch.max(output, 1)
  
                     test_num = test_num + test_label.size(0)
+                    correct_num = correct_num + (predicted.int() == test_label.int()).sum().item()
                     writer.add_scalar('StepAccuracy/test', ((predicted.int() == test_label.int()).sum().item()/test_label.size(0)), test_step)
                     test_iter.append((predicted.int() == test_label.int()).sum().item()/test_label.size(0))
                     test_step = test_step + 1
