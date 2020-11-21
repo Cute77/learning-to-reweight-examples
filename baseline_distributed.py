@@ -173,11 +173,15 @@ def train_net(noise_fraction,
             _, y_predicted = torch.max(y, 1)
             correct_y = correct_y + (y_predicted.int() == labels.int()).sum().item()
             num_y = num_y + labels.size(0) 
-            writer.add_scalar('StepAccuracy/train', ((y_predicted.int() == labels.int()).sum().item()/labels.size(0)), global_step)
+            
+            if local_rank == 0:
+                writer.add_scalar('StepAccuracy/train', ((y_predicted.int() == labels.int()).sum().item()/labels.size(0)), global_step)
+            
             train_iter.append((y_predicted.int() == labels.int()).sum().item()/labels.size(0))
 
             net_losses.append(cost.item())
-            writer.add_scalar('StepLoss/train', cost.item(), global_step)
+            if local_rank == 0:
+                writer.add_scalar('StepLoss/train', cost.item(), global_step)
             epoch_loss = epoch_loss + cost.item()
 
             opt.zero_grad()
@@ -200,7 +204,8 @@ def train_net(noise_fraction,
  
                     test_num = test_num + test_label.size(0)
                     correct_num = correct_num + (predicted.int() == test_label.int()).sum().item()
-                    writer.add_scalar('StepAccuracy/test', ((predicted.int() == test_label.int()).sum().item()/test_label.size(0)), test_step)
+                    if local_rank == 0:
+                        writer.add_scalar('StepAccuracy/test', ((predicted.int() == test_label.int()).sum().item()/test_label.size(0)), test_step)
                     test_iter.append((predicted.int() == test_label.int()).sum().item()/test_label.size(0))
                     test_step = test_step + 1
 
