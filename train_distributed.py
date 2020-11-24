@@ -76,7 +76,7 @@ def train_net(noise_fraction,
     lr = lr * num_gpus
 
     dir = 'baseline/' + fig_path
-    if not os.path.exists(dir):
+    if local_rank == 0 and not os.path.exists(dir):
         os.mkdir(dir)   
 
     path = 'baseline/' + fig_path + '/' + str(load) + '_model.pth'
