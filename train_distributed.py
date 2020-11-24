@@ -25,6 +25,7 @@ import higher
 from torch.optim.lr_scheduler import StepLR
 from skimage.io import imread, imsave
 import random
+import pickle
 
 seed = 1
 torch.manual_seed(seed)
@@ -38,10 +39,7 @@ torch.backends.cudnn.deterministic = True
 # os.environ["CUDA_VISIBEL_DEVICES"] = "0, 1, 2, 3"
 
 def synchronize():
-    """
-    Helper function to synchronize (barrier) among all processes when
-    using distributed training
-    """
+
     if not dist.is_available():
         return
     if not dist.is_initialized():
@@ -76,8 +74,12 @@ def train_net(noise_fraction,
     num_gpus = int(os.environ["WORLD_SIZE"]) if "WORLD_SIZE" in os.environ else 1
     is_distributed = num_gpus > 1
     lr = lr * num_gpus
-    
-    path = 'baseline/' + fig_path + '_' + str(load) + '_model.pth'
+
+    dir = 'baseline/' + fig_path
+    if not os.path.exists(dir):
+        os.mkdir(dir)   
+
+    path = 'baseline/' + fig_path + '/' + str(load) + '_model.pth'
     if is_distributed:
         torch.cuda.set_device(local_rank) 
         torch.distributed.init_process_group(
@@ -119,7 +121,8 @@ def train_net(noise_fraction,
     data = iter(data_loader)
     vali = iter(val_loader)
     loss = nn.CrossEntropyLoss(reduction="none")
-    writer = SummaryWriter(comment=f'name_{args.figpath}')
+    if local_rank == 0:
+        writer = SummaryWriter(comment=f'name_{args.figpath}')
     scheduler = StepLR(opt, step_size=50, gamma=0.5, last_epoch=load)
     
     plot_step = 10
@@ -161,25 +164,27 @@ def train_net(noise_fraction,
         num_y = 0
         test_num = 0
         correct_num = 0
-        # ws = torch.ones([32]).cuda(local_rank)
+        # ws = torch.ones([batch_size]).cuda(local_rank)
+        # wnoisy = torch.ones([batch_size]).cuda(local_rank)
+        # wclean = torch.ones([batch_size]).cuda(local_rank)
+        ws = []
+        wnoisy = []
+        wclean = []
         # big = 0
         # small = 0
 
         for i in range(len(data_loader)):
-            # print('train: ', len(train))
-            # print(len(data_loader))
-            # Line 2 get batch of data
             try:
-                image, labels = next(data)
+                image, labels, marks = next(data)
             except StopIteration:
                 data = iter(data_loader)
-                image, labels = next(data)
+                image, labels, marks = next(data)
 
             try:
-                val_data, val_labels = next(vali)
+                val_data, val_labels, _ = next(vali)
             except StopIteration:
                 vali = iter(val_loader)
-                val_data, val_labels = next(vali)
+                val_data, val_labels, _ = next(vali)
 
             # meta_net.load_state_dict(net.state_dict())
 
@@ -226,50 +231,14 @@ def train_net(noise_fraction,
 
             # print(type(w))
             # print(type(ws))
-            # print(epoch)
-            
-            if epoch == 31 or epoch == 101 or epoch == 151:
-                '''
-                for k in range(w.shape[0]):
-                    if w[k] < 0.05 and small < 100:
-                        small = small + 1
-                        name = fig_path + '/w_0.05/' + str(epoch) + '_' + str(small) + '.jpg'
-                        image_np = image[k]
-                        print('image: ', image[k].shape)
-                        img_np = image_np.cpu().numpy().squeeze()
-                        img_np = (img_np + 1) / 2 
-                        img_np = img_np * 255
-                        img_np = (np.moveaxis(img_np, 0, -1)).astype(np.uint8)
-                        print('img_np: ', img_np.shape) 
-                        imsave(name, img_np)
-                        print(name, 'saved.')
-                    if w[k] > 0.9 and big < 100:
-                        big = big + 1
-                        name = 'img_temp/w_0.9/' + str(epoch) + '_' + str(big) + '.jpg'
-                        image_np = image[k]
-                        img_np = image_np.cpu().numpy().squeeze()
-                        img_np = (img_np + 1) / 2 
-                        img_np = img_np * 255
-                        img_np = (np.moveaxis(img_np, 0, -1)).astype(np.uint8) 
-                        imsave(name, img_np) 
-                        print(name, 'saved.')  
-                                   
-                if i == 0:
-                    # print('i:', i)
-                    ws = w
-                else:
-                    # print('i: ', i)
-                    ws = torch.cat([ws, w])
-                '''
-            
-            # Lines 12 - 14 computing for the loss with the computed weights
-            # and then perform a parameter update
-            # with torch.no_grad():
+            # print(epoch)               
+
             y_f_hat = net(image)
             _, y_predicted = torch.max(y_f_hat, 1)
             correct_y = correct_y + (y_predicted.int() == labels.int()).sum().item()
             num_y = num_y + labels.size(0) 
-            writer.add_scalar('StepAccuracy/train', ((y_predicted.int() == labels.int()).sum().item()/labels.size(0)), global_step)
+            if local_rank == 0:
+                writer.add_scalar('StepAccuracy/train', ((y_predicted.int() == labels.int()).sum().item()/labels.size(0)), global_step)
             train_iter.append((y_predicted.int() == labels.int()).sum().item()/labels.size(0))
             
             cost = loss(y_f_hat, labels)
@@ -281,17 +250,29 @@ def train_net(noise_fraction,
             l_f = torch.sum(cost * w)
             # print(l_f.item())
             net_losses.append(l_f.item())
-            writer.add_scalar('StepLoss/train', l_f.item(), global_step)
+            if local_rank == 0:
+                writer.add_scalar('StepLoss/train', l_f.item(), global_step)
+
             epoch_loss = epoch_loss + l_f.item()
 
             opt.zero_grad()
             l_f.backward()
             opt.step()
+            global_step = global_step + 1
+
+            if epoch % 10 == 0:
+                w = w.cpu().numpy()
+                for k in range(marks.shape[0]):
+                    ws.append(w[k])
+                    if marks[k] == 1:
+                        wnoisy.append(w[k])
+                    else:
+                        wclean.append(w[k]) 
             
             if i % plot_step == 0:
                 net.eval()
 
-                for m, (test_img, test_label) in enumerate(test_loader):
+                for m, (test_img, test_label, _) in enumerate(test_loader):
                     test_img = test_img.cuda(local_rank)
                     test_label = test_label.cuda(local_rank)
                     test_img.requires_grad = False
@@ -300,48 +281,27 @@ def train_net(noise_fraction,
                     with torch.no_grad():
                         output = net(test_img)
                     _, predicted = torch.max(output, 1)
-                    # print(type(predicted))
-                    # predicted = to_var(predicted, requires_grad=False)
-                    # print(type(predicted))
-                    # test_label = test_label.float()
 
-                    # print(type((predicted == test_label).float()))
                     test_num = test_num + test_label.size(0)
                     # print(test_num)
                     correct_num = correct_num + (predicted.int() == test_label.int()).sum().item()
                     # acc.append((predicted.int() == test_label.int()).float())
-                    writer.add_scalar('StepAccuracy/test', ((predicted.int() == test_label.int()).sum().item()/test_label.size(0)), test_step)
+                    if local_rank == 0:
+                        writer.add_scalar('StepAccuracy/test', ((predicted.int() == test_label.int()).sum().item()/test_label.size(0)), test_step)
                     test_iter.append((predicted.int() == test_label.int()).sum().item()/test_label.size(0))
                     test_step = test_step + 1
-        '''
-        print('epoch ', epoch)
 
-        print('epoch loss: ', epoch_loss/len(train))
-        loss_train.append(epoch_loss/len(train))
-        writer.add_scalar('EpochLoss/train', epoch_loss/len(train), epoch)
-
-        print('epoch accuracy: ', correct_y/num_y)
-        acc_train.append(correct_y/num_y)
-        writer.add_scalar('EpochAccuracy/train', correct_y/num_y, epoch)
-
-        # path = 'baseline/' + args.figpath + '_model.pth'
-        # path = 'baseline/' + str(args.noise_fraction) + '/model.pth'
-        # torch.save(net.state_dict(), path)
-
-        print('test accuracy: ', correct_num/test_num)
-        writer.add_scalar('EpochAccuracy/test', correct_num/test_num, epoch)
-        acc_test.append(correct_num/test_num)
-        '''
         scheduler.step()
-        '''
-        if (epoch == 31 or epoch == 101 or epoch == 151) and local_rank == 0:
-            ws = ws.cpu().numpy().tolist()
-            plt.hist(x=ws, bins=20)
-            plt.savefig(fig_path+'_'+str(epoch)+'_w.png')
-            print('weight saved')
-        '''
+        
         if is_distributed and local_rank == 0 and epoch % 10 == 0:
-            path = 'baseline/' + fig_path + '_' + str(epoch) + '_model.pth'
+            pickle.dump(ws, open(dir+'/'+str(load)+"_w.pkl", "wb"))
+            pickle.dump(wnoisy, open(dir+'/'+str(load)+"_wnoisy.pkl", "wb"))
+            pickle.dump(wclean, open(dir+'/'+str(load)+"_wclean.pkl", "wb"))
+
+            print('weight saved')
+        
+        if is_distributed and local_rank == 0 and epoch % 10 == 0:
+            path = 'baseline/' + fig_path + '/' + str(epoch) + '_model.pth'
             torch.save(net.state_dict(), path) 
 
         if is_distributed and local_rank == 0:
@@ -377,42 +337,6 @@ def train_net(noise_fraction,
             writer.add_scalar('EpochAccuracy/test', correct_num/test_num, epoch)
             acc_test.append(correct_num/test_num)   
 
-    IPython.display.clear_output()
-    fig, axes = plt.subplots(2, 3)
-    ax1, ax2, ax3, ax4, ax5, ax6 = axes.ravel()
-
-    ax1.plot(net_losses, label='train_losses')
-    ax1.set_ylabel("Losses")
-    ax1.set_xlabel("Iteration")
-    ax1.legend()
-
-    ax2.plot(loss_train, label='epoch_losses')
-    ax2.set_ylabel('Losses/train')
-    ax2.set_xlabel('Epoch')
-    ax2.legend()
-
-    ax3.plot(acc_train, label='acc_train_epoch')
-    ax3.set_ylabel('Accuracy/trainEpoch')
-    ax3.set_xlabel('Epoch')
-    ax3.legend()
-
-    ax4.plot(train_iter, label='acc_train_iteration')
-    ax4.set_ylabel('Accuracy/trainIteration')
-    ax4.set_xlabel('Iteration')
-    ax4.legend()
-
-    ax5.plot(acc_test, label='acc_test_epoch')
-    ax5.set_ylabel('Accuracy/testEpoch')
-    ax5.set_xlabel('Epoch')
-    ax5.legend()
-
-    ax6.plot(test_iter, label='acc_train_iteration')
-    ax6.set_ylabel('Accuracy/trainIteration')
-    ax6.set_xlabel('Iteration')
-    ax6.legend()
-
-    plt.savefig(fig_path+'.png')
-        # return accuracy
     return net
 
 
