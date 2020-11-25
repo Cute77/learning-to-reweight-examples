@@ -111,9 +111,9 @@ def train_net(noise_fraction,
 
     train_sampler = distributed.DistributedSampler(train, num_replicas=num_gpus, rank=local_rank) if is_distributed else None
 
-    data_loader = DataLoader(train, batch_size=batch_size, shuffle=False, num_workers=8, pin_memory=True, sampler=train_sampler)
-    test_loader = DataLoader(test, batch_size=batch_size, shuffle=False, num_workers=8, pin_memory=True)
-    val_loader = DataLoader(val, batch_size=5, shuffle=False, num_workers=8, pin_memory=True)
+    data_loader = DataLoader(train, batch_size=batch_size, shuffle=False, num_workers=8, pin_memory=True, drop_last = True, sampler=train_sampler)
+    test_loader = DataLoader(test, batch_size=batch_size, shuffle=False, num_workers=8, drop_last = True, pin_memory=True)
+    val_loader = DataLoader(val, batch_size=5, shuffle=False, num_workers=8, pin_memory=True, drop_last = True)
     
     # data_loader = get_mnist_loader(hyperparameters['batch_size'], classes=[9, 4], proportion=0.995, mode="train")
     # test_loader = get_mnist_loader(hyperparameters['batch_size'], classes=[9, 4], proportion=0.5, mode="test")
@@ -222,7 +222,8 @@ def train_net(noise_fraction,
             w_tilde = torch.clamp(-grad_eps, min=0)
             # w_tilde = torch.sigmoid(-grad_eps)
             # print('w_tilde: ', w_tilde)
-            norm_c = torch.sum(w_tilde)
+            # norm_c = torch.sum(w_tilde)
+            norm_c = torch.sum(w_tilde) + 1e-10
 
             if norm_c != 0:
                 w = w_tilde / norm_c
