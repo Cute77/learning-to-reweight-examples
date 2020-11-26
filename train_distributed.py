@@ -202,7 +202,7 @@ def train_net(noise_fraction,
                 eps = torch.zeros(cost.size()).cuda()
                 eps = eps.requires_grad_()
                 l_f_meta = torch.sum(cost * eps)
-                if torch.isnan(cost) or torch.isnan(l_f_meta):
+                if torch.isnan(l_f_meta):
                     print('l_f_meta or cost1: ', names)
                 # meta_net.zero_grad()
                 meta_opt.step(l_f_meta)
@@ -247,8 +247,6 @@ def train_net(noise_fraction,
             train_iter.append((y_predicted.int() == labels.int()).sum().item()/labels.size(0))
             
             cost = loss(y_f_hat, labels)
-            if torch.isnan(cost):
-                print('cost3: ', names)
 
             # cost = F.binary_cross_entropy_with_logits(y_f_hat, labels, reduce=False)
             # w = torch.full(cost.size(), 1/32).cuda(local_rank)
