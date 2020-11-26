@@ -10,7 +10,7 @@ from tqdm import tqdm
 import IPython
 import gc
 import torchvision
-from datasets import BasicDataset
+from datasets_soft import BasicDataset
 from torch.utils.data import DataLoader
 import numpy as np
 import os
@@ -122,7 +122,7 @@ def train_net(noise_fraction,
     vali = iter(val_loader)
     loss = nn.CrossEntropyLoss(reduction="none")
     if local_rank == 0:
-        writer = SummaryWriter(comment=f'name_{args.figpath}')
+        writer = SummaryWriter(comment=fig_path)
     scheduler = StepLR(opt, step_size=50, gamma=0.5, last_epoch=load)
     
     plot_step = 10
@@ -175,16 +175,16 @@ def train_net(noise_fraction,
 
         for i in range(len(data_loader)):
             try:
-                image, labels, marks = next(data)
+                image, labels, marks, names = next(data)
             except StopIteration:
                 data = iter(data_loader)
-                image, labels, marks = next(data)
+                image, labels, marks, names = next(data)
 
             try:
-                val_data, val_labels, _ = next(vali)
+                val_data, val_labels, _, val_names = next(vali)
             except StopIteration:
                 vali = iter(val_loader)
-                val_data, val_labels, _ = next(vali)
+                val_data, val_labels, _, val_names = next(vali)
 
             # meta_net.load_state_dict(net.state_dict())
 
@@ -202,6 +202,8 @@ def train_net(noise_fraction,
                 eps = torch.zeros(cost.size()).cuda()
                 eps = eps.requires_grad_()
                 l_f_meta = torch.sum(cost * eps)
+                if torch.isnan(cost) or torch.isnan(l_f_meta):
+                    print('l_f_meta or cost1: ', names)
                 # meta_net.zero_grad()
                 meta_opt.step(l_f_meta)
                 # grads = torch.autograd.grad(l_f_meta, (meta_net.parameters()), create_graph=True, retain_graph=True)
@@ -210,6 +212,8 @@ def train_net(noise_fraction,
         
                 #loss = nn.CrossEntropyLoss()
                 l_g_meta = torch.mean(loss(y_g_hat, val_labels))
+                if torch.isnan(l_g_meta):
+                    print('l_g_meta: ', val_names)
                 # print(l_g_meta)
                 # print(eps)
                 # l_g_meta = F.binary_cross_entropy_with_logits(y_g_hat, val_labels)
@@ -243,12 +247,16 @@ def train_net(noise_fraction,
             train_iter.append((y_predicted.int() == labels.int()).sum().item()/labels.size(0))
             
             cost = loss(y_f_hat, labels)
+            if torch.isnan(cost):
+                print('cost3: ', names)
 
             # cost = F.binary_cross_entropy_with_logits(y_f_hat, labels, reduce=False)
             # w = torch.full(cost.size(), 1/32).cuda(local_rank)
             # print('w: ', w)
             # print('cost: ', cost)
             l_f = torch.sum(cost * w)
+            if torch.isnan(l_f):
+                print('l_f: ', names)
             # print(l_f.item())
             net_losses.append(l_f.item())
             if local_rank == 0:
