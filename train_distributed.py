@@ -79,6 +79,10 @@ def train_net(noise_fraction,
     if local_rank == 0 and not os.path.exists(dir):
         os.mkdir(dir)   
 
+    wdir = 'baseline/' + fig_path + '/w'
+    if local_rank == 0 and not os.path.exists(wdir):
+        os.mkdir(wdir)   
+
     path = 'baseline/' + fig_path + '/' + str(load) + '_model.pth'
     if is_distributed:
         torch.cuda.set_device(local_rank) 
@@ -118,8 +122,16 @@ def train_net(noise_fraction,
     # data_loader = get_mnist_loader(hyperparameters['batch_size'], classes=[9, 4], proportion=0.995, mode="train")
     # test_loader = get_mnist_loader(hyperparameters['batch_size'], classes=[9, 4], proportion=0.5, mode="test")
 
+    val_data, val_labels, _, _ = next(iter(val_loader))
+    if is_distributed:
+        val_data = val_data.cuda(local_rank)
+        val_labels = val_labels.cuda(local_rank)
+    else:
+        val_data = val_data.cuda()
+        val_labels = val_labels.cuda()
+
     data = iter(data_loader)
-    vali = iter(val_loader)
+    # vali = iter(val_loader)
     loss = nn.CrossEntropyLoss(reduction="none")
     if local_rank == 0:
         writer = SummaryWriter(comment=fig_path)
@@ -175,27 +187,27 @@ def train_net(noise_fraction,
 
         for i in range(len(data_loader)):
             try:
-                image, labels, marks, names = next(data)
+                image, labels, marks, _ = next(data)
             except StopIteration:
                 data = iter(data_loader)
-                image, labels, marks, names = next(data)
-
+                image, labels, marks, _ = next(data)
+            '''
             try:
                 val_data, val_labels, _, val_names = next(vali)
             except StopIteration:
                 vali = iter(val_loader)
                 val_data, val_labels, _, val_names = next(vali)
-
+            '''
             # meta_net.load_state_dict(net.state_dict())
 
             image = image.cuda(local_rank)
             labels = labels.cuda(local_rank)
             image.requires_grad = False
             labels.requires_grad = False
-            
+            '''
             val_data = val_data.cuda(local_rank)
             val_labels = val_labels.cuda(local_rank)
-
+            '''
             with higher.innerloop_ctx(net, opt) as (meta_net, meta_opt):
                 y_f_hat = meta_net(image)
                 cost = loss(y_f_hat, labels)
@@ -305,9 +317,9 @@ def train_net(noise_fraction,
         scheduler.step()
         
         if is_distributed and local_rank == 0 and epoch % 10 == 0:
-            pickle.dump(ws, open(dir+'/'+str(load)+"_w.pkl", "wb"))
-            pickle.dump(wnoisy, open(dir+'/'+str(load)+"_wnoisy.pkl", "wb"))
-            pickle.dump(wclean, open(dir+'/'+str(load)+"_wclean.pkl", "wb"))
+            pickle.dump(ws, open(wdir+'/'+str(load)+"_w.pkl", "wb"))
+            pickle.dump(wnoisy, open(wdir+'/'+str(load)+"_wnoisy.pkl", "wb"))
+            pickle.dump(wclean, open(wdir+'/'+str(load)+"_wclean.pkl", "wb"))
 
             print('weight saved')
         
