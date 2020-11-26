@@ -213,6 +213,7 @@ def train_net(noise_fraction,
                 #loss = nn.CrossEntropyLoss()
                 l_g_meta = torch.mean(loss(y_g_hat, val_labels))
                 if torch.isnan(l_g_meta):
+                    print('weights: ', list(meta_net.parameters()))
                     print('l_g_meta: ', val_names)
                     print('val_labels: ', val_labels)
                     print('val_data: ', val_data)
