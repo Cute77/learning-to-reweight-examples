@@ -215,6 +215,7 @@ def train_net(noise_fraction,
                 if torch.isnan(l_g_meta):
                     print('l_g_meta: ', val_names)
                     print('val_labels: ', val_labels)
+                    print('val_data: ', val_data)
                     print('y_g_hat: ', y_g_hat)
                 # print(l_g_meta)
                 # print(eps)
