@@ -279,7 +279,7 @@ def train_net(noise_fraction,
             if i % plot_step == 0:
                 net.eval()
 
-                for m, (test_img, test_label, _) in enumerate(test_loader):
+                for m, (test_img, test_label, _, _) in enumerate(test_loader):
                     test_img = test_img.cuda(local_rank)
                     test_label = test_label.cuda(local_rank)
                     test_img.requires_grad = False
