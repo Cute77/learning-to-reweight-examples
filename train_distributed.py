@@ -214,6 +214,8 @@ def train_net(noise_fraction,
                 l_g_meta = torch.mean(loss(y_g_hat, val_labels))
                 if torch.isnan(l_g_meta):
                     print('l_g_meta: ', val_names)
+                    print('val_labels: ', val_labels)
+                    print('y_g_hat: ', y_g_hat)
                 # print(l_g_meta)
                 # print(eps)
                 # l_g_meta = F.binary_cross_entropy_with_logits(y_g_hat, val_labels)
