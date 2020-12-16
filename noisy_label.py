@@ -34,6 +34,7 @@ for line in change_data:
         temp.pop(label.index('1.0'))
         random.shuffle(temp)
 
+        id = label.index('1.0')
         label[label.index('1.0')] = '0.0'
         label[temp[0]] = '1.0'
 
@@ -47,7 +48,7 @@ for line in change_data:
         
     label = ",".join(label)
     # marked by "1": noisy label, changed label
-    line = "1 " + name + label + '\n'
+    line = "1 " + str(id) + " " + name + label + '\n'
     noisy_data.append(line)
 
 
@@ -58,12 +59,12 @@ for index in range(offset):
 
 for index in range(offset, len(data)):
     # marked by "0": clean label, unchanged label
-    line = "0 " + data[index]
+    line = "0 0 " + data[index]
     datas.append(line)
 
 random.shuffle(datas)
 
-pathtwo = 'ISIC_2019_Training_GroundTruth_marked5000_train_' + str(noise_fraction) + '.csv'
+pathtwo = 'ISIC_2019_Training_GroundTruth_markedgiven5000_train_' + str(noise_fraction) + '.csv'
 ftwo = open(pathtwo, 'w')
 
 for line in datas:

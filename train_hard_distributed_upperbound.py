@@ -23,6 +23,7 @@ from tensorboardX import SummaryWriter
 from torch.optim.lr_scheduler import StepLR
 import higher 
 import random
+import pickle
 
 seed = 1
 torch.manual_seed(seed)
@@ -74,7 +75,13 @@ def train_net(noise_fraction,
     is_distributed = num_gpus > 1
     lr = lr * num_gpus
     
-    path = 'baseline/' + fig_path + '_' + str(load) + '_model.pth'
+    dir = 'baseline/' + fig_path
+    if local_rank == 0 and not os.path.exists(dir):
+        os.mkdir(dir)   
+    bdir = 'baseline/' + fig_path + '/b'
+    if local_rank == 0 and not os.path.exists(bdir):
+        os.mkdir(bdir)     
+    path = 'baseline/' + fig_path + '/' + str(load) + '_model.pth'
     if is_distributed:
         torch.cuda.set_device(local_rank) 
         # print("local_rank:", local_rank)
@@ -115,7 +122,7 @@ def train_net(noise_fraction,
     # test_loader = get_mnist_loader(hyperparameters['batch_size'], classes=[9, 4], proportion=0.5, mode="test")
 
     
-    val_data, val_labels, _ = next(iter(val_loader))
+    val_data, val_labels, _, _ = next(iter(val_loader))
     if is_distributed:
         val_data = val_data.cuda(local_rank)
         val_labels = val_labels.cuda(local_rank)
@@ -126,8 +133,9 @@ def train_net(noise_fraction,
     data = iter(data_loader)
     # vali = iter(val_loader)
     loss = nn.CrossEntropyLoss(reduction="none")
-    writer = SummaryWriter(comment=f'name_{args.figpath}')
-    scheduler = StepLR(opt, step_size=100, gamma=0.5, last_epoch=load)
+    if local_rank == 0:
+        writer = SummaryWriter(comment=f'name_{args.figpath}')
+    scheduler = StepLR(opt, step_size=50, gamma=0.5, last_epoch=load)
     
     plot_step = 10
     net_losses = []
@@ -173,13 +181,18 @@ def train_net(noise_fraction,
         num_y = 0
         test_num = 0
         correct_num = 0
+        correct_noisy = 0
+        noisy = 0
+        bs = []
+        bnoisy = []
+        bclean = []
         for i in range(len(data_loader)):
             # print(i)
             # print('train: ', len(train))
             # print(len(data_loader))
             # Line 2 get batch of data
             try:
-                image, labels, marks = next(data)
+                image, labels, marks, gt = next(data)
             except StopIteration:
                 data = iter(data_loader)
                 image, labels, marks = next(data)
@@ -217,7 +230,7 @@ def train_net(noise_fraction,
                 # if local_rank == 0:
                 #     print('l_f_meta: ', l_f_meta)
                 # meta_net.zero_grad()
-                nn.utils.clip_grad_norm_(l_f_meta, 0.25, norm_type=2)
+                # nn.utils.clip_grad_norm_(l_f_meta, 0.25, norm_type=2)
                 meta_opt.step(l_f_meta)
                 # grads = torch.autograd.grad(l_f_meta, (meta_net.parameters()), create_graph=True, retain_graph=True)
                 # meta_net.module.update_parameters(lr, source_parameters=grads)
@@ -248,12 +261,6 @@ def train_net(noise_fraction,
             #     beta = beta_tilde
             beta = beta_tilde
             
-            if epoch == 11 or epoch == 51 or epoch == 101 or epoch == 151 or epoch == 201:                 
-                if i == 0:
-                    bs = beta
-                else:
-                    bs = torch.cat([bs, beta])
-            
             # Lines 12 - 14 computing for the loss with the computed weights
             # and then perform a parameter update
             # with torch.no_grad():
@@ -262,7 +269,8 @@ def train_net(noise_fraction,
             _, y_predicted = torch.max(y_f_hat, 1)
             correct_y = correct_y + (y_predicted.int() == labels.int()).sum().item()
             num_y = num_y + labels.size(0) 
-            writer.add_scalar('StepAccuracy/train', ((y_predicted.int() == labels.int()).sum().item()/labels.size(0)), global_step)
+            if local_rank == 0:
+                writer.add_scalar('StepAccuracy/train', ((y_predicted.int() == labels.int()).sum().item()/labels.size(0)), global_step)
             train_iter.append((y_predicted.int() == labels.int()).sum().item())
             
             beta = beta.cuda(local_rank)
@@ -273,8 +281,12 @@ def train_net(noise_fraction,
                 if marks[k] == 1:
                     # mixup_labels[k] = beta[k] * labels[k] + (1-beta[k]) * y_predicted[k]
                     mixup_labels[k] = y_predicted[k]
+                    noisy += 1
+                    if y_predicted[k] == gt[k]:
+                        correct_noisy += 1
                 else:
                     mixup_labels[k] = labels[k]
+
             # if local_rank == 0:
             #     print('beta: ', beta)
             #     print('labels: ', labels)
@@ -283,22 +295,33 @@ def train_net(noise_fraction,
             # mixup_labels = mixup_labels.cpu()
             # mixup_labels = torch.LongTensor(mixup_labels).cuda(local_rank)
             cost = loss(y_f_hat, mixup_labels.long())
-            w = torch.ones(cost.size()).cuda(local_rank)
+            w = torch.ones(cost.size()).cuda(local_rank) * 1 / batch_size
             # cost = F.binary_cross_entropy_with_logits(y_f_hat, labels, reduce=False)
             l_f = torch.sum(cost * w)
             net_losses.append(l_f.item())
-            writer.add_scalar('StepLoss/train', l_f.item(), global_step)
+            if local_rank == 0:
+                writer.add_scalar('StepLoss/train', l_f.item(), global_step)
             epoch_loss = epoch_loss + l_f.item()
 
             opt.zero_grad()
             l_f.backward()
             nn.utils.clip_grad_norm_(net.parameters(), 0.25, norm_type=2)
             opt.step()
-            
+            global_step = global_step + 1
+
+            if epoch % 10 == 0:
+                beta = beta.cpu().numpy()
+                for k in range(marks.shape[0]):
+                    bs.append(beta[k])
+                    if marks[k] == 1:
+                        bnoisy.append(beta[k])
+                    else:
+                        bclean.append(beta[k])
+
             if i % plot_step == 0:
                 net.eval()
 
-                for m, (test_img, test_label, _) in enumerate(test_loader):
+                for m, (test_img, test_label, _, _) in enumerate(test_loader):
                     test_img = test_img.cuda(local_rank)
                     test_label = test_label.cuda(local_rank)
                     test_img.requires_grad = False
@@ -317,7 +340,8 @@ def train_net(noise_fraction,
                     # print(test_num)
                     correct_num = correct_num + (predicted.int() == test_label.int()).sum().item()
                     # acc.append((predicted.int() == test_label.int()).float())
-                    writer.add_scalar('StepAccuracy/test', ((predicted.int() == test_label.int()).sum().item()/test_label.size(0)), test_step)
+                    if local_rank == 0:
+                        writer.add_scalar('StepAccuracy/test', ((predicted.int() == test_label.int()).sum().item()/test_label.size(0)), test_step)
                     test_iter.append((predicted.int() == test_label.int()).sum().item())
                     test_step = test_step + 1
         '''
@@ -342,15 +366,15 @@ def train_net(noise_fraction,
 
         scheduler.step()
 
-        
-        if (epoch == 11 or epoch == 51 or epoch == 101 or epoch == 151 or epoch == 201) and local_rank == 0:
-            bs = bs.cpu().numpy().tolist()
-            plt.hist(x=bs, bins=20)
-            plt.savefig(fig_path+'_'+str(epoch)+'_beta.png')
+        if is_distributed and local_rank == 0 and epoch % 10 == 0: 
+            pickle.dump(bs, open(bdir+'/'+str(load)+"_b.pkl", "wb"))
+            pickle.dump(bnoisy, open(bdir+'/'+str(load)+"_bnoisy.pkl", "wb"))
+            pickle.dump(bclean, open(bdir+'/'+str(load)+"_bclean.pkl", "wb"))
+
             print('beta saved')
         
-        if is_distributed and local_rank == 0 and epoch % 5 == 0:
-            path = 'baseline/' + fig_path + '_' + str(epoch) + '_model.pth'
+        if is_distributed and local_rank == 0 and epoch % 10 == 0:
+            path = 'baseline/' + fig_path + '/' + str(epoch) + '_model.pth'
             torch.save(net.state_dict(), path) 
 
         if is_distributed and local_rank == 0:
@@ -370,8 +394,11 @@ def train_net(noise_fraction,
             writer.add_scalar('EpochAccuracy/test', correct_num/test_num, epoch)
             acc_test.append(correct_num/test_num)
 
-        if not is_distributed and epoch % 5 == 0:
-            path = 'baseline/' + fig_path + '_' + str(epoch) + '_model.pth'
+            print('correct noisy: ', correct_noisy/noisy)
+            writer.add_scalar('EpochCorrectNoisy/test', correct_noisy/noisy, epoch)
+
+        if not is_distributed and epoch % 10 == 0:
+            path = 'baseline/' + fig_path + '/' + str(epoch) + '_model.pth'
             torch.save(net.state_dict(), path)
 
         if not is_distributed:

@@ -39,7 +39,7 @@ class BasicDataset(Dataset):
         if "marked" in datatxt:
             for line in fh:
                 line = line.rstrip()
-                imgs.append((line.split(" ")[0], line.split(" ")[1].split(",")[0], line.split(" ")[1].split(",")[1:]))
+                imgs.append((line.split(" ")[0], line.split(" ")[1], line.split(" ")[2].split(",")[0], line.split(" ")[2].split(",")[1:]))
         else:
             for line in fh:
                 line = line.rstrip()
@@ -79,7 +79,8 @@ class BasicDataset(Dataset):
         '''
 
     def __getitem__(self, index):
-        mark, fn, labels = self.imgs[index]
+        mark, gt, fn, labels = self.imgs[index]
+        gt = int(gt)
         mark = int(mark)
         label = labels.index('1.0')
         img = Image.open(self.imgs_dir+fn+'.jpg').convert('RGB')
@@ -93,7 +94,7 @@ class BasicDataset(Dataset):
         '''
         img = self.transform(img)
 
-        return img, label, mark
+        return img, label, mark, gt
 
     def __len__(self):
         return len(self.imgs)
