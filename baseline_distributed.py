@@ -78,7 +78,7 @@ def train_net(noise_fraction,
     
     dir = 'baseline/model/' + fig_path
     path = 'baseline/model/' + fig_path + '/' + str(load) + '_model.pth'
-    if not os.path.exists(dir):
+    if not os.path.exists(dir) and local_rank == 0:
         os.mkdir(dir)
 
     if is_distributed:
