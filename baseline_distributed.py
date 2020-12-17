@@ -76,8 +76,8 @@ def train_net(noise_fraction,
     is_distributed = num_gpus > 1
     lr = lr * num_gpus
     
-    dir = 'baseline/' + fig_path
-    path = 'baseline/' + fig_path + '/' + str(load) + '_model.pth'
+    dir = 'baseline/model/' + fig_path
+    path = 'baseline/model/' + fig_path + '/' + str(load) + '_model.pth'
     if not os.path.exists(dir):
         os.mkdir(dir)
 
@@ -211,7 +211,7 @@ def train_net(noise_fraction,
         scheduler.step()
 
         if is_distributed and local_rank == 0 and epoch % 10 == 0:
-            path = 'baseline/' + fig_path + '/' + str(epoch) + '_model.pth'
+            path = 'baseline/model/' + fig_path + '/' + str(epoch) + '_model.pth'
             torch.save(net.state_dict(), path) 
 
         if is_distributed and local_rank == 0:
