@@ -79,9 +79,7 @@ class BasicDataset(Dataset):
         '''
 
     def __getitem__(self, index):
-        mark, gt, fn, labels = self.imgs[index]
-        gt = int(gt)
-        mark = int(mark)
+        fn, labels = self.imgs[index]
         label = labels.index('1.0')
         img = Image.open(self.imgs_dir+fn+'.jpg').convert('RGB')
         '''
@@ -94,7 +92,7 @@ class BasicDataset(Dataset):
         '''
         img = self.transform(img)
 
-        return img, label, mark, gt
+        return img, label
 
     def __len__(self):
         return len(self.imgs)

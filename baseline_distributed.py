@@ -10,7 +10,7 @@ from tqdm import tqdm
 import IPython
 import gc
 import torchvision
-from datasets import BasicDataset
+from datasets_base import BasicDataset
 from torch.utils.data import DataLoader
 import numpy as np
 import os
@@ -80,7 +80,7 @@ def train_net(noise_fraction,
     path = 'baseline/' + fig_path + '/' + str(load) + '_model.pth'
     if not os.path.exists(dir):
         os.mkdir(dir)
-    # path = 'baseline/' + fig_path + '_' + str(load) + '_model.pth'
+
     if is_distributed:
         torch.cuda.set_device(local_rank) 
         torch.distributed.init_process_group(
@@ -103,7 +103,8 @@ def train_net(noise_fraction,
             net.load_state_dict(torch.load(path))
         # net, opt = build_model(lr, local_rank)
     
-    train = BasicDataset(dir_img, noise_fraction, mode='train')
+    # train = BasicDataset(dir_img, noise_fraction, mode='train')
+    train = BasicDataset(dir_img, noise_fraction, mode='base')
     test = BasicDataset(dir_img, noise_fraction, mode='test')
 
     train_sampler = distributed.DistributedSampler(train, num_replicas=num_gpus, rank=local_rank) if is_distributed else None
@@ -150,19 +151,16 @@ def train_net(noise_fraction,
         num_y = 0
         test_num = 0
         correct_num = 0
-        # ws = torch.ones([32]).cuda(local_rank)
-        # big = 0
-        # small = 0
 
         for i in range(len(data_loader)):
             # print('train: ', len(train))
             # print(len(data_loader))
             # Line 2 get batch of data
             try:
-                image, labels, _ = next(data)
+                image, labels = next(data)
             except StopIteration:
                 data = iter(data_loader)
-                image, labels, _ = next(data)
+                image, labels = next(data)
 
             image = image.cuda(local_rank)
             labels = labels.cuda(local_rank)
@@ -193,7 +191,7 @@ def train_net(noise_fraction,
             if i % plot_step == 0:
                 net.eval()
 
-                for m, (test_img, test_label, _) in enumerate(test_loader):
+                for m, (test_img, test_label) in enumerate(test_loader):
                     test_img = test_img.cuda(local_rank)
                     test_label = test_label.cuda(local_rank)
                     test_img.requires_grad = False

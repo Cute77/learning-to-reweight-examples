@@ -2,7 +2,7 @@ import random
 
 # path = 'ISIC_2019_Training_GroundTruth_train_0.2.csv'
 path = 'ISIC_2019_Training_GroundTruth_sub5000_train.csv'
-noise_fraction = 0.2
+noise_fraction = 0.4
 
 fn = open(path, 'r+')
 data = []

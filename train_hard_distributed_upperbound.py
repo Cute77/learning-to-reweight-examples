@@ -187,10 +187,6 @@ def train_net(noise_fraction,
         bnoisy = []
         bclean = []
         for i in range(len(data_loader)):
-            # print(i)
-            # print('train: ', len(train))
-            # print(len(data_loader))
-            # Line 2 get batch of data
             try:
                 image, labels, marks, gt = next(data)
             except StopIteration:
