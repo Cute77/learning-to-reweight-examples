@@ -75,13 +75,13 @@ def train_net(noise_fraction,
     is_distributed = num_gpus > 1
     lr = lr * num_gpus
     
-    dir = 'baseline/' + fig_path
+    dir = 'baseline/model/' + fig_path
     if local_rank == 0 and not os.path.exists(dir):
         os.mkdir(dir)   
-    wdir = 'baseline/' + fig_path + '/b'
+    wdir = 'baseline/model/' + fig_path + '/b'
     if local_rank == 0 and not os.path.exists(wdir):
         os.mkdir(wdir)     
-    path = 'baseline/' + fig_path + '/' + str(load) + '_model.pth'
+    path = 'baseline/model/' + fig_path + '/' + str(load) + '_model.pth'
     if is_distributed:
         torch.cuda.set_device(local_rank) 
         # print("local_rank:", local_rank)
@@ -95,6 +95,9 @@ def train_net(noise_fraction,
             net, device_ids=[local_rank], output_device=local_rank, find_unused_parameters=True, 
         )
         clean_net, _ = build_model(lr, local_rank)
+        clean_net = torch.nn.parallel.DistributedDataParallel(
+            clean_net, device_ids=[local_rank], output_device=local_rank, find_unused_parameters=True, 
+        )
         clean_net.load_state_dict(torch.load('baseline/model/baselineclean5000/190_model.pth'))
         if os.path.isfile(path) and load > 0:
             logging.info(f'''Continue''')
