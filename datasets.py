@@ -43,7 +43,7 @@ class BasicDataset(Dataset):
         else:
             for line in fh:
                 line = line.rstrip()
-                imgs.append(("0", line.split(",")[0], line.split(",")[1:]))
+                imgs.append(("0", "0", line.split(",")[0], line.split(",")[1:]))
 
 
         self.imgs = imgs
