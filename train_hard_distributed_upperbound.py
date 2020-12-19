@@ -78,9 +78,9 @@ def train_net(noise_fraction,
     dir = 'baseline/' + fig_path
     if local_rank == 0 and not os.path.exists(dir):
         os.mkdir(dir)   
-    bdir = 'baseline/' + fig_path + '/b'
-    if local_rank == 0 and not os.path.exists(bdir):
-        os.mkdir(bdir)     
+    wdir = 'baseline/' + fig_path + '/b'
+    if local_rank == 0 and not os.path.exists(wdir):
+        os.mkdir(wdir)     
     path = 'baseline/' + fig_path + '/' + str(load) + '_model.pth'
     if is_distributed:
         torch.cuda.set_device(local_rank) 
@@ -94,6 +94,8 @@ def train_net(noise_fraction,
         net = torch.nn.parallel.DistributedDataParallel(
             net, device_ids=[local_rank], output_device=local_rank, find_unused_parameters=True, 
         )
+        clean_net, _ = build_model(lr, local_rank)
+        clean_net.load_state_dict(torch.load('baseline/model/baselineclean5000/190_model.pth'))
         if os.path.isfile(path) and load > 0:
             logging.info(f'''Continue''')
             net.load_state_dict(torch.load(path))
@@ -183,15 +185,15 @@ def train_net(noise_fraction,
         correct_num = 0
         correct_noisy = 0
         noisy = 0
-        bs = []
-        bnoisy = []
-        bclean = []
+        ws = []
+        wnoisy = []
+        wclean = []
         for i in range(len(data_loader)):
             try:
                 image, labels, marks, gt = next(data)
             except StopIteration:
                 data = iter(data_loader)
-                image, labels, marks = next(data)
+                image, labels, marks, gt = next(data)
             '''
             try:
                 val_data, val_labels, _ = next(vali)
@@ -247,7 +249,7 @@ def train_net(noise_fraction,
                 # print(grad_eps)
                 # Line 11 computing and normalizing the weights
 
-            beta_tilde = torch.sigmoid(-grad_eps)
+            w_tilde = torch.sigmoid(-grad_eps)
             # print(w_tilde)
             # norm_c = torch.sum(beta_tilde)
 
@@ -255,30 +257,38 @@ def train_net(noise_fraction,
             #     beta = beta_tilde / norm_c
             # else:
             #     beta = beta_tilde
-            beta = beta_tilde
+            norm_c = torch.sum(w_tilde)
+
+            if norm_c != 0:
+                w = w_tilde / norm_c
+            else:
+                w = w_tilde
+
             
             # Lines 12 - 14 computing for the loss with the computed weights
             # and then perform a parameter update
             # with torch.no_grad():
             y_f_hat = net(image)
+            y_clean = clean_net(image)
 
             _, y_predicted = torch.max(y_f_hat, 1)
+            _, y_predicted_clean = torch.max(y_clean, 1)
             correct_y = correct_y + (y_predicted.int() == labels.int()).sum().item()
             num_y = num_y + labels.size(0) 
             if local_rank == 0:
                 writer.add_scalar('StepAccuracy/train', ((y_predicted.int() == labels.int()).sum().item()/labels.size(0)), global_step)
             train_iter.append((y_predicted.int() == labels.int()).sum().item())
             
-            beta = beta.cuda(local_rank)
+            w = w.cuda(local_rank)
             # print("label: ", labels.size())
             # print("beta: ", beta.size())
             # print("y_prediced: ", y_predicted.size())
             for k in range(marks.shape[0]):
                 if marks[k] == 1:
                     # mixup_labels[k] = beta[k] * labels[k] + (1-beta[k]) * y_predicted[k]
-                    mixup_labels[k] = y_predicted[k]
+                    mixup_labels[k] = y_predicted_clean[k]
                     noisy += 1
-                    if y_predicted[k] == gt[k]:
+                    if y_predicted_clean[k] == gt[k]:
                         correct_noisy += 1
                 else:
                     mixup_labels[k] = labels[k]
@@ -291,7 +301,7 @@ def train_net(noise_fraction,
             # mixup_labels = mixup_labels.cpu()
             # mixup_labels = torch.LongTensor(mixup_labels).cuda(local_rank)
             cost = loss(y_f_hat, mixup_labels.long())
-            w = torch.ones(cost.size()).cuda(local_rank) * 1 / batch_size
+            # w = torch.ones(cost.size()).cuda(local_rank) * 1 / batch_size
             # cost = F.binary_cross_entropy_with_logits(y_f_hat, labels, reduce=False)
             l_f = torch.sum(cost * w)
             net_losses.append(l_f.item())
@@ -306,13 +316,13 @@ def train_net(noise_fraction,
             global_step = global_step + 1
 
             if epoch % 10 == 0:
-                beta = beta.cpu().numpy()
+                w = w.cpu().numpy()
                 for k in range(marks.shape[0]):
-                    bs.append(beta[k])
+                    ws.append(w[k])
                     if marks[k] == 1:
-                        bnoisy.append(beta[k])
+                        wnoisy.append(w[k])
                     else:
-                        bclean.append(beta[k])
+                        wclean.append(w[k])
 
             if i % plot_step == 0:
                 net.eval()
@@ -363,14 +373,14 @@ def train_net(noise_fraction,
         scheduler.step()
 
         if is_distributed and local_rank == 0 and epoch % 10 == 0: 
-            pickle.dump(bs, open(bdir+'/'+str(load)+"_b.pkl", "wb"))
-            pickle.dump(bnoisy, open(bdir+'/'+str(load)+"_bnoisy.pkl", "wb"))
-            pickle.dump(bclean, open(bdir+'/'+str(load)+"_bclean.pkl", "wb"))
+            pickle.dump(ws, open(wdir+'/'+str(load)+"_w.pkl", "wb"))
+            pickle.dump(wnoisy, open(wdir+'/'+str(load)+"_wnoisy.pkl", "wb"))
+            pickle.dump(wclean, open(wdir+'/'+str(load)+"_wclean.pkl", "wb"))
 
             print('beta saved')
         
         if is_distributed and local_rank == 0 and epoch % 10 == 0:
-            path = 'baseline/' + fig_path + '/' + str(epoch) + '_model.pth'
+            path = 'baseline/model/' + fig_path + '/' + str(epoch) + '_model.pth'
             torch.save(net.state_dict(), path) 
 
         if is_distributed and local_rank == 0:
@@ -393,61 +403,6 @@ def train_net(noise_fraction,
             print('correct noisy: ', correct_noisy/noisy)
             writer.add_scalar('EpochCorrectNoisy/test', correct_noisy/noisy, epoch)
 
-        if not is_distributed and epoch % 10 == 0:
-            path = 'baseline/' + fig_path + '/' + str(epoch) + '_model.pth'
-            torch.save(net.state_dict(), path)
-
-        if not is_distributed:
-            # torch.save(net.state_dict(), path)
-            print('epoch ', epoch)
-
-            print('epoch loss: ', epoch_loss/len(data_loader))
-            loss_train.append(epoch_loss/len(train))
-            writer.add_scalar('EpochLoss/train', epoch_loss/len(data_loader), epoch)
-
-            print('epoch accuracy: ', correct_y/num_y)
-            acc_train.append(correct_y/num_y)
-            writer.add_scalar('EpochAccuracy/train', correct_y/num_y, epoch)
-
-            print('test accuracy: ', correct_num/test_num)
-            writer.add_scalar('EpochAccuracy/test', correct_num/test_num, epoch)
-            acc_test.append(correct_num/test_num)   
-
-    IPython.display.clear_output()
-    fig, axes = plt.subplots(2, 3)
-    ax1, ax2, ax3, ax4, ax5, ax6 = axes.ravel()
-
-    ax1.plot(net_losses, label='train_losses')
-    ax1.set_ylabel("Losses")
-    ax1.set_xlabel("Iteration")
-    ax1.legend()
-
-    ax2.plot(loss_train, label='epoch_losses')
-    ax2.set_ylabel('Losses/train')
-    ax2.set_xlabel('Epoch')
-    ax2.legend()
-
-    ax3.plot(acc_train, label='acc_train_epoch')
-    ax3.set_ylabel('Accuracy/trainEpoch')
-    ax3.set_xlabel('Epoch')
-    ax3.legend()
-
-    ax4.plot(train_iter, label='acc_train_iteration')
-    ax4.set_ylabel('Accuracy/trainIteration')
-    ax4.set_xlabel('Iteration')
-    ax4.legend()
-
-    ax5.plot(acc_test, label='acc_test_epoch')
-    ax5.set_ylabel('Accuracy/testEpoch')
-    ax5.set_xlabel('Epoch')
-    ax5.legend()
-
-    ax6.plot(test_iter, label='acc_train_iteration')
-    ax6.set_ylabel('Accuracy/trainIteration')
-    ax6.set_xlabel('Iteration')
-    ax6.legend()
-
-    plt.savefig(fig_path+'.png')
         # return accuracy
     return net
 
