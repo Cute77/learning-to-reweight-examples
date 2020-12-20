@@ -102,7 +102,7 @@ def train_net(noise_fraction,
             clean_net, device_ids=[local_rank], output_device=local_rank, find_unused_parameters=True, 
         )
         print('clean_net parallel')
-        clean_net.load_state_dict(torch.load('baseline/model/baselineclean5000/190_model.pth'))
+        clean_net.load_state_dict(torch.load('baseline/model/baselineclean5000/180_model.pth'))
         print('Clean_net load')
         if os.path.isfile(path) and load > 0:
             logging.info(f'''Continue''')
