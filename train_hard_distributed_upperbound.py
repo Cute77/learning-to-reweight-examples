@@ -91,19 +91,19 @@ def train_net(noise_fraction,
         # net, opt = build_model(lr, local_rank)
         # synchronize()
         net, opt = build_model(lr, local_rank)
-        print('net build')
+        # print('net build')
         net = torch.nn.parallel.DistributedDataParallel(
             net, device_ids=[local_rank], output_device=local_rank, find_unused_parameters=True, 
         )
-        print('net parallel')
+        # print('net parallel')
         clean_net, _ = build_model(lr, local_rank)
-        print('clean_net build')
+        # print('clean_net build')
         clean_net = torch.nn.parallel.DistributedDataParallel(
             clean_net, device_ids=[local_rank], output_device=local_rank, find_unused_parameters=True, 
         )
-        print('clean_net parallel')
+        # print('clean_net parallel')
         clean_net.load_state_dict(torch.load('baseline/model/baselineclean5000/180_model.pth'))
-        print('Clean_net load')
+        # print('Clean_net load')
         if os.path.isfile(path) and load > 0:
             logging.info(f'''Continue''')
             net.load_state_dict(torch.load(path))
@@ -171,12 +171,12 @@ def train_net(noise_fraction,
             meta_net.cuda(local_rank)
         else:
             meta_net.cuda()
-    print('meta_net cuda')
+    # print('meta_net cuda')
     if is_distributed:
         meta_net = torch.nn.parallel.DistributedDataParallel(
             meta_net, device_ids=[local_rank], output_device=local_rank, find_unused_parameters=True,
         )
-        print('meta_net parallel')
+        # print('meta_net parallel')
 
     for epoch in range(load+1, epochs):
         net.train()
