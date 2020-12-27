@@ -8,7 +8,18 @@ Make a folder to save models and download data (ISIC2019). Put them into the sam
 ```bash
 mkdir models
 wget https://isic-challenge-data.s3.amazonaws.com/2019/ISIC_2019_Training_Input.zip
+wget https://isic-challenge-data.s3.amazonaws.com/2019/ISIC_2019_Training_GroundTruth.csv
 ```
+
+Produce config files for a sub dataset with 5000 samples:
+
+```bash
+python split.py
+# Please directly modificate the noise fraction in noisy_label.py
+python noisy_label.py
+```
+
+
 
 ## Baseline-clean
 
@@ -16,6 +27,9 @@ Setting:
 
 - 5000 samples with clean labels
 - ResNet 50
+- Epoches: 200
+- Batch Size: 32
+- Learning Rate: 1e-3, decay every 50 epochs
 - Augmentation: RandomRotation [-180, 180], RandomResize [0.3, 1], RandomHorizontalFlip 
 
 command:
@@ -37,7 +51,7 @@ Setting:
 - ResNet 50
 - Epoches: 200
 - Batch Size: 32
-- Learning Rate: 1e-3, decay every 50 epoch
+- Learning Rate: 1e-3, decay every 50 epochs
 - Augmentation: RandomRotation [-180, 180], RandomResize [0.3, 1], RandomHorizontalFlip 
 
 Command:
@@ -54,7 +68,7 @@ Setting:
 - ResNet 50
 - Epoches: 200
 - Batch Size: 32
-- Learning Rate: 1e-3, decay every 50 epoch
+- Learning Rate: 1e-3, decay every 50 epochs
 - Augmentation: RandomRotation [-180, 180], RandomResize [0.3, 1], RandomHorizontalFlip 
 
 Command:
@@ -71,7 +85,7 @@ Setting:
 - ResNet 50
 - Epoches: 200
 - Batch Size: 32
-- Learning Rate: 1e-3, decay every 50 epoch
+- Learning Rate: 1e-3, decay every 50 epochs
 - Clean dataset: 5 or 125
 - Augmentation: RandomRotation [-180, 180], RandomResize [0.3, 1], RandomHorizontalFlip 
 
@@ -83,7 +97,7 @@ Algorithms:
 </center>
 
 
-Implement:
+Implementation:
 ```bash
 with higher.innerloop_ctx(net, opt) as (meta_net, meta_opt):
     # Line 4 in Algorithm1
@@ -145,7 +159,7 @@ Setting:
 - ResNet 50
 - Epoches: 200
 - Batch Size: 32
-- Learning Rate: 1e-3, decay every 50 epoch
+- Learning Rate: 1e-3, decay every 50 epochs
 - Clean dataset: 5
 - Augmentation: RandomRotation [-180, 180], RandomResize [0.3, 1], RandomHorizontalFlip 
 
@@ -246,7 +260,7 @@ Setting:
 - ResNet 50
 - Epoches: 200
 - Batch Size: 32
-- Learning Rate: 1e-3, decay every 50 epoch
+- Learning Rate: 1e-3, decay every 50 epochs
 - Clean dataset: 5
 - Augmentation: RandomRotation [-180, 180], RandomResize [0.3, 1], RandomHorizontalFlip 
 
