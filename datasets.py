@@ -8,7 +8,6 @@ import logging
 from PIL import Image, ImageFilter
 from torchvision import transforms, datasets
 import argparse
-# from skimage.util import random_noise
 
 class BasicDataset(Dataset):
     def __init__(self, imgs_dir, noise_fraction=None, mode='train', target_transform=None):
@@ -58,25 +57,6 @@ class BasicDataset(Dataset):
                transforms.ToTensor(), 
                transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[1.0, 1.0, 1.0])
             ])
-        
-        '''
-        self.val_data = []
-        self.val_label = []
-
-        for line in fc:
-            line = line.rstrip()
-            fm, label_val = line.split(",")[0], line.split(",")[1:]
-            label_val = list(map(float, label_val))
-            label_val = np.array(label_val)
-            self.val_label.append(label_val)
-
-            data_val = Image.open(self.imgs_dir+fm+'.jpg').convert('RGB')
-            data_val = self.transform(data_val)
-            self.val_data.append(data_val)
-
-            self.val_data = torch.cat(self.val_data, dim=0)
-            self.val_label = torch.cat(self.val_label, dim=0)
-        '''
 
     def __getitem__(self, index):
         mark, gt, fn, labels = self.imgs[index]

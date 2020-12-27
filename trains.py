@@ -2,7 +2,6 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.autograd import Variable
-# import model
 from torchvision import models
 from tqdm import tqdm
 import IPython
@@ -22,23 +21,6 @@ from tensorboardX import SummaryWriter
 import sys
 import higher
 
-'''
-def synchronize():
-    """
-    Helper function to synchronize (barrier) among all processes when
-    using distributed training
-    """
-    if not dist.is_available():
-        return
-    if not dist.is_initialized():
-        return
-    world_size = dist.get_world_size()
-    if world_size == 1:
-        return
-    dist.barrier()
-'''
-
-
 def to_var(x, requires_grad=True):
     if torch.cuda.is_available():
         x = x.cuda()
@@ -49,9 +31,7 @@ def build_model(lr):
     net = models.resnet101(pretrained=True, num_classes=9)
 
     if torch.cuda.is_available():
-        # net.cuda()
         net = net.cuda()
-        # torch.backends.cudnn.benchmark = True
 
     opt = torch.optim.SGD(net.parameters(), lr, weight_decay=1e-4)
     
@@ -68,32 +48,15 @@ def train_net(noise_fraction,
               dir_checkpoint='checkpoints/ISIC_2019_Training_Input/',
               epochs=10):
 
-    # torch.distributed.is_nccl_available()
-
-    # os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-    # os.environ["CUDA_VISIBLE_DEVICES"] = device_id
-    # device_ids = list(map(int, device_id.split(',')))
-    # print(device_ids)
-
     net, opt = build_model(lr)
 
     train = BasicDataset(dir_img, noise_fraction, mode='train')
     test = BasicDataset(dir_img, noise_fraction, mode='test')
     val = BasicDataset(dir_img, noise_fraction, mode='val')
-    # n_test = int(len(dataset) * test_percent)
-    # n_train = len(dataset) - n_val
-    # train, test = random_split(dataset, [n_train, n_test])
-
-    # train_sampler = distributed.DistributedSampler(train)
-    # test_sampler = distributed.DistributedSampler(test)
-    # val_sampler = distributed.DistributedSampler(val)
 
     data_loader = DataLoader(train, batch_size=batch_size, shuffle=False, num_workers=16, pin_memory=True)
     test_loader = DataLoader(test, batch_size=batch_size, shuffle=False, num_workers=16, pin_memory=True)
     val_loader = DataLoader(val, batch_size=5, shuffle=False, num_workers=16, pin_memory=True)
-    
-    # data_loader = get_mnist_loader(hyperparameters['batch_size'], classes=[9, 4], proportion=0.995, mode="train")
-    # test_loader = get_mnist_loader(hyperparameters['batch_size'], classes=[9, 4], proportion=0.5, mode="test")
 
     val_data, val_labels = next(iter(val_loader))
     val_data = val_data.cuda()
@@ -155,20 +118,14 @@ def train_net(noise_fraction,
                 y_g_hat = meta_net(val_data)
                 l_g_meta = torch.mean(loss(y_g_hat, val_labels))
                 grad_eps = torch.autograd.grad(l_g_meta, eps, only_inputs=True)[0]
-                # print(type(grad_eps))
-            
-            # Line 11 computing and normalizing the weights
+
             w_tilde = torch.clamp(-grad_eps, min=0)
             norm_c = torch.sum(w_tilde)
-
             if norm_c != 0:
                 w = w_tilde / norm_c
             else:
                 w = w_tilde
 
-            # Lines 12 - 14 computing for the loss with the computed weights
-            # and then perform a parameter update
-            # with torch.no_grad():
             y_f_hat = net(image)
             _, y_predicted = torch.max(y_f_hat, 1)
             correct_y = correct_y + (y_predicted.int() == labels.int()).sum().item()
@@ -177,15 +134,14 @@ def train_net(noise_fraction,
             
             cost = loss(y_f_hat, labels)
 
-            # cost = F.binary_cross_entropy_with_logits(y_f_hat, labels, reduce=False)
             l_f = torch.sum(cost * w)
-            net_losses.append(l_f.item())
             writer.add_scalar('StepLoss/train', l_f.item(), global_step)
             epoch_loss = epoch_loss + l_f.item()
 
             opt.zero_grad()
             l_f.backward()
             opt.step()
+            global_step = global_step + 1
             
             if i % plot_step == 0:
                 net.eval()
@@ -198,65 +154,26 @@ def train_net(noise_fraction,
                     with torch.no_grad():
                         output = net(test_img)
                     _, predicted = torch.max(output, 1)
-                    # print(type(predicted))
-                    # predicted = to_var(predicted, requires_grad=False)
-                    # print(type(predicted))
-                    # test_label = test_label.float()
 
-                    # print(type((predicted == test_label).float()))
                     test_num = test_num + test_label.size(0)
                     correct_num = correct_num + (predicted.int() == test_label.int()).sum().item()
-                    acc.append((predicted.int() == test_label.int()).float())
                     writer.add_scalar('StepAccuracy/test', ((predicted.int() == test_label.int()).sum().item()/test_label.size(0)), test_step)
                     test_step = test_step + 1
                 
         print('epoch ', epoch)
 
         print('epoch loss: ', epoch_loss/len(data_loader))
-        loss_train.append(epoch_loss/len(data_loader))
         writer.add_scalar('EpochLoss/train', epoch_loss/len(data_loader), epoch)
 
         print('epoch accuracy: ', correct_y/num_y)
-        acc_train.append(correct_y/num_y)
         writer.add_scalar('EpochAccuracy/train', correct_y/num_y, epoch)
-
-        # path = 'baseline/' + args.figpath + '_model.pth'
-        # path = 'baseline/' + str(args.noise_fraction) + '/model.pth'
-        # torch.save(net.state_dict(), path)
 
         print('test accuracy: ', correct_num/test_num)
         writer.add_scalar('EpochAccuracy/test', correct_num/test_num, epoch)
-        acc_test.append(correct_num/test_num)
 
-        path = 'baseline/' + fig_path + '_model.pth'
+        path = 'models/' + fig_path + '_model.pth'
         torch.save(net.state_dict(), path) 
-    
-    IPython.display.clear_output()
-    fig, axes = plt.subplots(2, 2)
-    ax1, ax2, ax3, ax4 = axes.ravel()
 
-    ax1.plot(net_losses, label='train_losses')
-    ax1.set_ylabel("Losses")
-    ax1.set_xlabel("Iteration")
-    ax1.legend()
-
-    ax2.plot(loss_train, label='epoch_losses')
-    ax2.set_ylabel('Losses/train')
-    ax2.set_xlabel('Epoch')
-    ax2.legend()
-
-    ax3.plot(acc_train, label='acc_train')
-    ax3.set_ylabel('Accuracy/train')
-    ax3.set_xlabel('Epoch')
-    ax3.legend()
-
-    ax4.plot(acc_test, label='acc_test')
-    ax4.set_ylabel('Accuracy/test')
-    ax4.set_xlabel('Epoch')
-    ax4.legend()
-
-    plt.savefig(fig_path+'.png')
-        # return accuracy
     return net
 
 

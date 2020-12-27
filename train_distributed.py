@@ -3,14 +3,12 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.autograd import Variable
-# import model
 from torchvision import models
-# import models
 from tqdm import tqdm
 import IPython
 import gc
 import torchvision
-from datasets_soft import BasicDataset
+from datasets import BasicDataset
 from torch.utils.data import DataLoader
 import numpy as np
 import os
@@ -24,30 +22,7 @@ from tensorboardX import SummaryWriter
 import higher 
 from torch.optim.lr_scheduler import StepLR
 from skimage.io import imread, imsave
-import random
 import pickle
-
-seed = 1
-torch.manual_seed(seed)
-torch.cuda.manual_seed(seed) 
-torch.cuda.manual_seed_all(seed)
-np.random.seed(seed)  
-random.seed(seed)   
-torch.backends.cudnn.benchmark = False
-torch.backends.cudnn.deterministic = True
-
-# os.environ["CUDA_VISIBEL_DEVICES"] = "0, 1, 2, 3"
-
-def synchronize():
-
-    if not dist.is_available():
-        return
-    if not dist.is_initialized():
-        return
-    world_size = dist.get_world_size()
-    if world_size == 1:
-        return
-    dist.barrier()
 
 
 def build_model(lr, local_rank):
@@ -75,22 +50,20 @@ def train_net(noise_fraction,
     is_distributed = num_gpus > 1
     lr = lr * num_gpus
 
-    dir = 'baseline/' + fig_path
+    dir = 'models/' + fig_path
     if local_rank == 0 and not os.path.exists(dir):
         os.mkdir(dir)   
 
-    wdir = 'baseline/' + fig_path + '/w'
+    wdir = 'models/' + fig_path + '/w'
     if local_rank == 0 and not os.path.exists(wdir):
         os.mkdir(wdir)   
 
-    path = 'baseline/' + fig_path + '/' + str(load) + '_model.pth'
+    path = 'models/' + fig_path + '/' + str(load) + '_model.pth'
     if is_distributed:
         torch.cuda.set_device(local_rank) 
         torch.distributed.init_process_group(
             backend="nccl", init_method="env://"
         )    
-        # net, opt = build_model(lr, local_rank)
-        # synchronize()
         net, opt = build_model(lr, local_rank)
         net = torch.nn.parallel.DistributedDataParallel(
             net, device_ids=[local_rank], output_device=local_rank, find_unused_parameters=True, 
@@ -104,25 +77,18 @@ def train_net(noise_fraction,
         if os.path.isfile(path):
             logging.info(f'''Continue''')
             net.load_state_dict(torch.load(path))
-        # net, opt = build_model(lr, local_rank)
     
     train = BasicDataset(dir_img, noise_fraction, mode='train')
     test = BasicDataset(dir_img, noise_fraction, mode='test')
     val = BasicDataset(dir_img, noise_fraction, mode='val')
-    # n_test = int(len(dataset) * test_percent)
-    # n_train = len(dataset) - n_val
-    # train, test = random_split(dataset, [n_train, n_test])
 
     train_sampler = distributed.DistributedSampler(train, num_replicas=num_gpus, rank=local_rank) if is_distributed else None
 
     data_loader = DataLoader(train, batch_size=batch_size, shuffle=False, num_workers=8, pin_memory=True, drop_last = True, sampler=train_sampler)
     test_loader = DataLoader(test, batch_size=batch_size, shuffle=False, num_workers=8, drop_last = True, pin_memory=True)
     val_loader = DataLoader(val, batch_size=5, shuffle=False, num_workers=8, pin_memory=True, drop_last = True)
-    
-    # data_loader = get_mnist_loader(hyperparameters['batch_size'], classes=[9, 4], proportion=0.995, mode="train")
-    # test_loader = get_mnist_loader(hyperparameters['batch_size'], classes=[9, 4], proportion=0.5, mode="test")
 
-    val_data, val_labels, _, _ = next(iter(val_loader))
+    val_data, val_labels, _ = next(iter(val_loader))
     if is_distributed:
         val_data = val_data.cuda(local_rank)
         val_labels = val_labels.cuda(local_rank)
@@ -131,19 +97,14 @@ def train_net(noise_fraction,
         val_labels = val_labels.cuda()
 
     data = iter(data_loader)
+    # 125 clean dataset
     # vali = iter(val_loader)
     loss = nn.CrossEntropyLoss(reduction="none")
+    scheduler = StepLR(opt, step_size=50, gamma=0.5, last_epoch=load)
     if local_rank == 0:
         writer = SummaryWriter(comment=fig_path)
-    scheduler = StepLR(opt, step_size=50, gamma=0.5, last_epoch=load)
-    
+
     plot_step = 10
-    net_losses = []
-    acc_test = []
-    acc_train = []
-    train_iter = []
-    test_iter = []
-    loss_train = []
     global_step = 0
     test_step = 0
 
@@ -176,29 +137,23 @@ def train_net(noise_fraction,
         num_y = 0
         test_num = 0
         correct_num = 0
-        # ws = torch.ones([batch_size]).cuda(local_rank)
-        # wnoisy = torch.ones([batch_size]).cuda(local_rank)
-        # wclean = torch.ones([batch_size]).cuda(local_rank)
         ws = []
         wnoisy = []
         wclean = []
-        # big = 0
-        # small = 0
 
         for i in range(len(data_loader)):
             try:
-                image, labels, marks, _ = next(data)
+                image, labels, marks = next(data)
             except StopIteration:
                 data = iter(data_loader)
-                image, labels, marks, _ = next(data)
+                image, labels, marks = next(data)
             '''
             try:
-                val_data, val_labels, _, val_names = next(vali)
+                val_data, val_labels, _ = next(vali)
             except StopIteration:
                 vali = iter(val_loader)
-                val_data, val_labels, _, val_names = next(vali)
+                val_data, val_labels, _ = next(vali)
             '''
-            # meta_net.load_state_dict(net.state_dict())
 
             image = image.cuda(local_rank)
             labels = labels.cuda(local_rank)
@@ -208,42 +163,24 @@ def train_net(noise_fraction,
             val_data = val_data.cuda(local_rank)
             val_labels = val_labels.cuda(local_rank)
             '''
+
             with higher.innerloop_ctx(net, opt) as (meta_net, meta_opt):
                 y_f_hat = meta_net(image)
                 cost = loss(y_f_hat, labels)
                 eps = torch.zeros(cost.size()).cuda()
                 eps = eps.requires_grad_()
+
                 l_f_meta = torch.sum(cost * eps)
-                if torch.isnan(l_f_meta):
-                    print('l_f_meta or cost1: ', names)
-                # meta_net.zero_grad()
-                nn.utils.clip_grad_norm_(meta_net.parameters(), 0.25, norm_type=2)
                 meta_opt.step(l_f_meta)
-                # grads = torch.autograd.grad(l_f_meta, (meta_net.parameters()), create_graph=True, retain_graph=True)
-                # meta_net.module.update_parameters(lr, source_parameters=grads)
+
                 y_g_hat = meta_net(val_data)
-        
-                #loss = nn.CrossEntropyLoss()
                 l_g_meta = torch.mean(loss(y_g_hat, val_labels))
-                if torch.isnan(l_g_meta):
-                    print('weights: ', list(meta_net.parameters()))
-                    print('l_g_meta: ', val_names)
-                    print('val_labels: ', val_labels)
-                    print('val_data: ', val_data)
-                    print('y_g_hat: ', y_g_hat)
-                # print(l_g_meta)
-                # print(eps)
-                # l_g_meta = F.binary_cross_entropy_with_logits(y_g_hat, val_labels)
 
                 grad_eps = torch.autograd.grad(l_g_meta, eps, only_inputs=True, allow_unused=True)[0].detach()
-                #print("epos: ", type(grad_eps))
-                # print(grad_eps)
-                # Line 11 computing and normalizing the weights
 
-            w_tilde = torch.clamp(-grad_eps, min=0)
-            # w_tilde = torch.sigmoid(-grad_eps)
-            # print('w_tilde: ', w_tilde)
-            # norm_c = torch.sum(w_tilde)
+            # w_tilde = torch.clamp(-grad_eps, min=0)
+            w_tilde = torch.sigmoid(-grad_eps)
+
             norm_c = torch.sum(w_tilde) + 1e-10
 
             if norm_c != 0:
@@ -251,29 +188,18 @@ def train_net(noise_fraction,
             else:
                 w = w_tilde
 
-            # print(type(w))
-            # print(type(ws))
-            # print(epoch)               
-
             y_f_hat = net(image)
             _, y_predicted = torch.max(y_f_hat, 1)
+
             correct_y = correct_y + (y_predicted.int() == labels.int()).sum().item()
             num_y = num_y + labels.size(0) 
+
             if local_rank == 0:
                 writer.add_scalar('StepAccuracy/train', ((y_predicted.int() == labels.int()).sum().item()/labels.size(0)), global_step)
-            train_iter.append((y_predicted.int() == labels.int()).sum().item()/labels.size(0))
             
             cost = loss(y_f_hat, labels)
-
-            # cost = F.binary_cross_entropy_with_logits(y_f_hat, labels, reduce=False)
-            # w = torch.full(cost.size(), 1/32).cuda(local_rank)
-            # print('w: ', w)
-            # print('cost: ', cost)
             l_f = torch.sum(cost * w)
-            if torch.isnan(l_f):
-                print('l_f: ', names)
-            # print(l_f.item())
-            net_losses.append(l_f.item())
+
             if local_rank == 0:
                 writer.add_scalar('StepLoss/train', l_f.item(), global_step)
 
@@ -297,7 +223,7 @@ def train_net(noise_fraction,
             if i % plot_step == 0:
                 net.eval()
 
-                for m, (test_img, test_label, _, _) in enumerate(test_loader):
+                for m, (test_img, test_label, _) in enumerate(test_loader):
                     test_img = test_img.cuda(local_rank)
                     test_label = test_label.cuda(local_rank)
                     test_img.requires_grad = False
@@ -308,12 +234,9 @@ def train_net(noise_fraction,
                     _, predicted = torch.max(output, 1)
 
                     test_num = test_num + test_label.size(0)
-                    # print(test_num)
                     correct_num = correct_num + (predicted.int() == test_label.int()).sum().item()
-                    # acc.append((predicted.int() == test_label.int()).float())
                     if local_rank == 0:
                         writer.add_scalar('StepAccuracy/test', ((predicted.int() == test_label.int()).sum().item()/test_label.size(0)), test_step)
-                    test_iter.append((predicted.int() == test_label.int()).sum().item()/test_label.size(0))
                     test_step = test_step + 1
 
         scheduler.step()
@@ -322,45 +245,37 @@ def train_net(noise_fraction,
             pickle.dump(ws, open(wdir+'/'+str(load)+"_w.pkl", "wb"))
             pickle.dump(wnoisy, open(wdir+'/'+str(load)+"_wnoisy.pkl", "wb"))
             pickle.dump(wclean, open(wdir+'/'+str(load)+"_wclean.pkl", "wb"))
-
             print('weight saved')
         
         if is_distributed and local_rank == 0 and epoch % 10 == 0:
-            path = 'baseline/' + fig_path + '/' + str(epoch) + '_model.pth'
+            path = 'models/' + fig_path + '/' + str(epoch) + '_model.pth'
             torch.save(net.state_dict(), path) 
 
         if is_distributed and local_rank == 0:
-            # torch.save(net.state_dict(), path) 
             print('epoch ', epoch)
             print('learning rate: ', opt.param_groups[0]['lr'])
 
             print('epoch loss: ', epoch_loss/len(data_loader))
-            loss_train.append(epoch_loss/len(data_loader))
             writer.add_scalar('EpochLoss/train', epoch_loss/len(data_loader), epoch)
 
             print('epoch accuracy: ', correct_y/num_y)
-            acc_train.append(correct_y/num_y)
             writer.add_scalar('EpochAccuracy/train', correct_y/num_y, epoch)
 
             print('test accuracy: ', correct_num/test_num)
             writer.add_scalar('EpochAccuracy/test', correct_num/test_num, epoch)
-            acc_test.append(correct_num/test_num)
 
         if not is_distributed:
             torch.save(net.state_dict(), path)
             print('epoch ', epoch)
 
             print('epoch loss: ', epoch_loss/len(data_loader))
-            loss_train.append(epoch_loss/len(train))
             writer.add_scalar('EpochLoss/train', epoch_loss/len(data_loader), epoch)
 
             print('epoch accuracy: ', correct_y/num_y)
-            acc_train.append(correct_y/num_y)
             writer.add_scalar('EpochAccuracy/train', correct_y/num_y, epoch)
 
             print('test accuracy: ', correct_num/test_num)
-            writer.add_scalar('EpochAccuracy/test', correct_num/test_num, epoch)
-            acc_test.append(correct_num/test_num)   
+            writer.add_scalar('EpochAccuracy/test', correct_num/test_num, epoch) 
 
     return net
 

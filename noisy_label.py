@@ -1,6 +1,5 @@
 import random
 
-# path = 'ISIC_2019_Training_GroundTruth_train_0.2.csv'
 path = 'ISIC_2019_Training_GroundTruth_sub5000_train.csv'
 noise_fraction = 0.4
 
@@ -10,8 +9,6 @@ for line in fn:
     data.append(line)
 fn.close
 
-
-# print(data)
 len_data = len(data)
 offset = int(len_data * noise_fraction)
 
@@ -25,10 +22,6 @@ for line in change_data:
     name = line.split(',')[0] + ','
     label = line.split(',')[1:]
     temp = [0, 1, 2, 3, 4, 5, 6, 7, 8]
-
-    # print('id: ', id)
-    # print('temp: ', temp)
-    # print('label: ', label)
 
     if '1.0' in line:
         temp.pop(label.index('1.0'))

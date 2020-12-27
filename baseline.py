@@ -20,16 +20,7 @@ import logging
 import torch.distributed as dist
 from torch.utils.data import distributed
 import os
-import random
 
-seed = 1
-torch.manual_seed(seed)
-torch.cuda.manual_seed(seed) 
-torch.cuda.manual_seed_all(seed)
-np.random.seed(seed)  
-random.seed(seed)   
-torch.backends.cudnn.benchmark = False
-torch.backends.cudnn.deterministic = True
 
 def to_var(x, requires_grad=True):
     if torch.cuda.is_available():
@@ -39,7 +30,6 @@ def to_var(x, requires_grad=True):
 
 def build_model(lr):
     net = model.resnet101(pretrained=True, num_classes=9)
-    # net = model.LeNet(n_out=1)
 
     if torch.cuda.is_available():
         net.cuda()
@@ -84,6 +74,7 @@ net, opt = build_model(lr)
 num_gpus = int(os.environ["WORLD_SIZE"]) if "WORLD_SIZE" in os.environ else 1
 is_distributed = num_gpus > 1
 lr = lr * num_gpus
+
 dir = 'baseline/' + fig_path
 path = 'baseline/' + fig_path + '/' + str(load) + '_model.pth'
 if not os.path.exists(dir):
@@ -114,15 +105,12 @@ plot_step = 100
 net_l = 0
 global_step = 0
 test_step = 0
-
 smoothing_alpha = 0.9
 accuracy_log = []
 
-# data_loader = dl.get_mnist_loader(args.batch_size, classes=[9, 4], proportion=0.995, mode="train")
-# test_loader = dl.get_mnist_loader(args.batch_size, classes=[9, 4], proportion=0.5, mode="test")
-
 
 train = BasicDataset(imgs_dir=args.imgs_dir, noise_fraction=args.noise_fraction, mode='train')
+# mode = 'base': noise-fraction = 0, labels are all clean
 # train = BasicDataset(imgs_dir=args.imgs_dir, mode='base')
 test = BasicDataset(imgs_dir=args.imgs_dir, mode='test')
 
@@ -133,7 +121,6 @@ test_loader = DataLoader(test, batch_size=args.batch_size, shuffle=False, num_wo
 
 data = iter(data_loader)
 loss = nn.CrossEntropyLoss()
-# loss = nn.MultiLabelSoftMarginLoss()
 
 test_num = 0
 correct_num = 0
@@ -146,20 +133,19 @@ for epoch in range(load+1, epochs):
     correct_num = 0
 
     for i in range(len(data_loader)):
-    # for i in range(8000):
         net.train()
         try:
             image, labels, _ = next(data)
         except StopIteration:
             data = iter(data_loader)
             image, labels, _ = next(data)
-        # image, labels = next(iter(data_loader))
 
         if is_distributed:
             image = image.cuda(local_rank)
             labels = labels.cuda(local_rank)
             val_data = val_data.cuda(local_rank)
             val_labels = val_labels.cuda(local_rank)
+
         image = to_var(image, requires_grad=False)
         labels = to_var(labels, requires_grad=False)
 

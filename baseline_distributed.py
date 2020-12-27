@@ -3,9 +3,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.autograd import Variable
-# import model
 from torchvision import models
-# import models
 from tqdm import tqdm
 import IPython
 import gc
@@ -23,32 +21,6 @@ import matplotlib.pyplot as plt
 from tensorboardX import SummaryWriter
 from torch.optim.lr_scheduler import StepLR
 from skimage.io import imread, imsave
-import random
-
-seed = 1
-torch.manual_seed(seed)
-torch.cuda.manual_seed(seed) 
-torch.cuda.manual_seed_all(seed)
-np.random.seed(seed)  
-random.seed(seed)   
-torch.backends.cudnn.benchmark = False
-torch.backends.cudnn.deterministic = True
-
-# os.environ["CUDA_VISIBEL_DEVICES"] = "0, 1, 2, 3"
-
-def synchronize():
-    """
-    Helper function to synchronize (barrier) among all processes when
-    using distributed training
-    """
-    if not dist.is_available():
-        return
-    if not dist.is_initialized():
-        return
-    world_size = dist.get_world_size()
-    if world_size == 1:
-        return
-    dist.barrier()
 
 
 def build_model(lr, local_rank):
@@ -70,14 +42,13 @@ def train_net(noise_fraction,
               dir_checkpoint='checkpoints/ISIC_2019_Training_Input/',
               epochs=10, 
               load=-1):
-
     
     num_gpus = int(os.environ["WORLD_SIZE"]) if "WORLD_SIZE" in os.environ else 1
     is_distributed = num_gpus > 1
     lr = lr * num_gpus
     
-    dir = 'baseline/model/' + fig_path
-    path = 'baseline/model/' + fig_path + '/' + str(load) + '_model.pth'
+    dir = 'models/' + fig_path
+    path = 'models/' + fig_path + '/' + str(load) + '_model.pth'
     if local_rank == 0 and not os.path.exists(dir):
         os.mkdir(dir)
 
@@ -86,8 +57,6 @@ def train_net(noise_fraction,
         torch.distributed.init_process_group(
             backend="nccl", init_method="env://"
         )    
-        # net, opt = build_model(lr, local_rank)
-        # synchronize()
         net, opt = build_model(lr, local_rank)
         net = torch.nn.parallel.DistributedDataParallel(
             net, device_ids=[local_rank], output_device=local_rank, find_unused_parameters=True, 
@@ -101,9 +70,10 @@ def train_net(noise_fraction,
         if os.path.isfile(path):
             logging.info(f'''Continue''')
             net.load_state_dict(torch.load(path))
-        # net, opt = build_model(lr, local_rank)
+
     
     # train = BasicDataset(dir_img, noise_fraction, mode='train')
+    # mode = 'base': noise-fraction = 0
     train = BasicDataset(dir_img, noise_fraction, mode='base')
     test = BasicDataset(dir_img, noise_fraction, mode='test')
 
@@ -111,23 +81,15 @@ def train_net(noise_fraction,
 
     data_loader = DataLoader(train, batch_size=batch_size, shuffle=False, num_workers=8, pin_memory=True, sampler=train_sampler)
     test_loader = DataLoader(test, batch_size=batch_size, shuffle=False, num_workers=8, pin_memory=True)
-    
-    # data_loader = get_mnist_loader(hyperparameters['batch_size'], classes=[9, 4], proportion=0.995, mode="train")
-    # test_loader = get_mnist_loader(hyperparameters['batch_size'], classes=[9, 4], proportion=0.5, mode="test")
 
     data = iter(data_loader)
     loss = nn.CrossEntropyLoss()
+    scheduler = StepLR(opt, step_size=50, gamma=0.5, last_epoch=load)
+
     if local_rank == 0:
         writer = SummaryWriter(comment=fig_path)
-    scheduler = StepLR(opt, step_size=50, gamma=0.5, last_epoch=load)
     
     plot_step = 10
-    net_losses = []
-    acc_test = []
-    acc_train = []
-    train_iter = []
-    test_iter = []
-    loss_train = []
     global_step = 0
     test_step = 0
 
@@ -153,9 +115,6 @@ def train_net(noise_fraction,
         correct_num = 0
 
         for i in range(len(data_loader)):
-            # print('train: ', len(train))
-            # print(len(data_loader))
-            # Line 2 get batch of data
             try:
                 image, labels = next(data)
             except StopIteration:
@@ -175,14 +134,9 @@ def train_net(noise_fraction,
             
             if local_rank == 0:
                 writer.add_scalar('StepAccuracy/train', ((y_predicted.int() == labels.int()).sum().item()/labels.size(0)), global_step)
-            
-            train_iter.append((y_predicted.int() == labels.int()).sum().item()/labels.size(0))
-
-            net_losses.append(cost.item())
-            if local_rank == 0:
                 writer.add_scalar('StepLoss/train', cost.item(), global_step)
-            epoch_loss = epoch_loss + cost.item()
 
+            epoch_loss = epoch_loss + cost.item()
             opt.zero_grad()
             cost.backward()
             opt.step()
@@ -203,33 +157,30 @@ def train_net(noise_fraction,
  
                     test_num = test_num + test_label.size(0)
                     correct_num = correct_num + (predicted.int() == test_label.int()).sum().item()
+
                     if local_rank == 0:
                         writer.add_scalar('StepAccuracy/test', ((predicted.int() == test_label.int()).sum().item()/test_label.size(0)), test_step)
-                    test_iter.append((predicted.int() == test_label.int()).sum().item()/test_label.size(0))
+
                     test_step = test_step + 1
 
         scheduler.step()
 
         if is_distributed and local_rank == 0 and epoch % 10 == 0:
-            path = 'baseline/model/' + fig_path + '/' + str(epoch) + '_model.pth'
+            path = 'models/' + fig_path + '/' + str(epoch) + '_model.pth'
             torch.save(net.state_dict(), path) 
 
         if is_distributed and local_rank == 0:
-            # torch.save(net.state_dict(), path) 
             print('epoch ', epoch)
             print('learning rate: ', opt.param_groups[0]['lr'])
 
             print('epoch loss: ', epoch_loss/len(data_loader))
-            loss_train.append(epoch_loss/len(data_loader))
             writer.add_scalar('EpochLoss/train', epoch_loss/len(data_loader), epoch)
 
             print('epoch accuracy: ', correct_y/num_y)
-            acc_train.append(correct_y/num_y)
             writer.add_scalar('EpochAccuracy/train', correct_y/num_y, epoch)
 
             print('test accuracy: ', correct_num/test_num)
             writer.add_scalar('EpochAccuracy/test', correct_num/test_num, epoch)
-            acc_test.append(correct_num/test_num)
 
     return net
 
@@ -274,7 +225,6 @@ if __name__ == '__main__':
                                   epochs=args.epochs,
                                   local_rank=args.local_rank, 
                                   load = args.load)
-        # print('Test Accuracy: ', accuracy)
 
     except KeyboardInterrupt:
         torch.save(net.state_dict(), 'INTERRUPTED.pth')
