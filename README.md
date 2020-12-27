@@ -15,7 +15,8 @@ Produce config files for a sub dataset with 5000 samples:
 
 ```bash
 python split.py
-# Please directly modificate the noise fraction in noisy_label.py
+# Please directly modify the noise fraction in noisy_label.py
+# The config files have already produced in the same directory as README.md
 python noisy_label.py
 ```
 
