@@ -16,7 +16,7 @@ Produce config files for a sub dataset with 5000 samples:
 ```bash
 python split.py
 # Please directly modify the noise fraction in noisy_label.py
-# The config files have already produced in the same directory as README.md
+# The config files have already been produced in the same directory as README.md
 python noisy_label.py
 ```
 
@@ -48,7 +48,7 @@ train = BasicDataset(dir_img, noise_fraction, mode='base')
 Setting:
 
 - 5000 samples
-- Noise fraction 0.2: 4000 samples with clean labels and 1000 samples with noisy samples
+- Noise fraction 0.2: 4000 samples with clean labels and 1000 samples with noisy labels
 - ResNet 50
 - Epoches: 200
 - Batch Size: 32
@@ -65,7 +65,7 @@ CUDA_VISIBEL_DEVICES=0,1,2,3 python -u -m torch.distributed.launch --nproc_per_n
 Setting:
 
 - 5000 samples
-- Noise fraction 0.4: 3000 samples with clean labels and 2000 samples with noisy samples
+- Noise fraction 0.4: 3000 samples with clean labels and 2000 samples with noisy labels
 - ResNet 50
 - Epoches: 200
 - Batch Size: 32
@@ -291,8 +291,7 @@ _, y_predicted_clean = torch.max(y_clean, 1)
 # Soft: prob = nn.functional.softmax(y_clean, dim=1).detach()
 for k in range(marks.shape[0]):
     # For examples with noisy labels
-    if marks[k] == 1:
-        # Hard: 
+    if marks[k] == 1: 
         mixup_labels[k] = y_predicted_clean[k]
         # Soft: mixup_labels[k] = prob[k]
     else:
@@ -362,8 +361,6 @@ Command:
 CUDA_VISIBEL_DEVICES=0,1,2,3 python -u -m torch.distributed.launch --nproc_per_node=4 train_mix_distributed.py --epochs=200 --noise-fraction=0.4 --fig-path=proposal_hard_0.4 > proposal_hard_0.4.out &
 ```
 
-
-- Upper Bound:
 
 
 ## Results
