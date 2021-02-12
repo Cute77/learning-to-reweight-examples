@@ -82,7 +82,6 @@ def train_net(noise_fraction,
     test_step = 0
 
     logging.info(f'''Starting training:
-        Devices:         {num_gpus}
         Epochs:          {epochs}
         Batch size:      {batch_size}
         Learning rate:   {lr}
