@@ -88,7 +88,7 @@ def train_net(noise_fraction,
     test_loader = DataLoader(test, batch_size=batch_size, shuffle=False, num_workers=8, drop_last = True, pin_memory=True)
     val_loader = DataLoader(val, batch_size=5, shuffle=False, num_workers=8, pin_memory=True, drop_last = True)
 
-    val_data, val_labels, _ = next(iter(val_loader))
+    val_data, val_labels, _, _ = next(iter(val_loader))
     if is_distributed:
         val_data = val_data.cuda(local_rank)
         val_labels = val_labels.cuda(local_rank)
@@ -143,10 +143,10 @@ def train_net(noise_fraction,
 
         for i in range(len(data_loader)):
             try:
-                image, labels, marks = next(data)
+                image, labels, marks, _ = next(data)
             except StopIteration:
                 data = iter(data_loader)
-                image, labels, marks = next(data)
+                image, labels, marks, _ = next(data)
             '''
             try:
                 val_data, val_labels, _ = next(vali)
@@ -223,7 +223,7 @@ def train_net(noise_fraction,
             if i % plot_step == 0:
                 net.eval()
 
-                for m, (test_img, test_label, _) in enumerate(test_loader):
+                for m, (test_img, test_label, _, _) in enumerate(test_loader):
                     test_img = test_img.cuda(local_rank)
                     test_label = test_label.cuda(local_rank)
                     test_img.requires_grad = False

@@ -1,8 +1,9 @@
+import sys
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.autograd import Variable
-import model
+from torchvision import models
 from tqdm import tqdm
 import IPython
 import gc
@@ -18,61 +19,70 @@ from torch.utils.data import distributed
 import matplotlib
 import matplotlib.pyplot as plt
 from tensorboardX import SummaryWriter
-import sys
-
-
-def to_var(x, requires_grad=True):
-    if torch.cuda.is_available():
-        x = x.cuda()
-    return Variable(x, requires_grad=requires_grad)
+import higher 
+from torch.optim.lr_scheduler import StepLR
+from skimage.io import imread, imsave
+import pickle
 
 
 def build_model(lr):
-    net = model.resnet101(pretrained=True, num_classes=9)
-
-    if torch.cuda.is_available():
-        net = net.cuda()
-        torch.backends.cudnn.benchmark = True
-
-    opt = torch.optim.SGD(net.params(), lr, weight_decay=1e-4)
+    net = models.resnet101(pretrained=True, num_classes=9)
+    net = net.cuda()
+    opt = torch.optim.SGD([{'params': net.parameters(), 'initial_lr': lr}], lr, weight_decay=1e-4)
     
     return net, opt
 
 
 def train_net(noise_fraction, 
-              fig_path, 
+              fig_path,
               lr=1e-3,
               momentum=0.9, 
               batch_size=128,
               dir_img='ISIC_2019_Training_Input/',
               save_cp=True,
               dir_checkpoint='checkpoints/ISIC_2019_Training_Input/',
-              epochs=10):
+              epochs=10, 
+              load=-1):
 
+    dir = 'models/' + fig_path
+    if not os.path.exists(dir):
+        os.mkdir(dir)   
+
+    wdir = 'models/' + fig_path + '/w'
+    if not os.path.exists(wdir):
+        os.mkdir(wdir)   
+
+    path = 'models/' + fig_path + '/' + str(load) + '_model.pth'
     net, opt = build_model(lr)
-
+    if os.path.isfile(path):
+        logging.info(f'''Continue''')
+        net.load_state_dict(torch.load(path))
+    
     train = BasicDataset(dir_img, noise_fraction, mode='train')
     test = BasicDataset(dir_img, noise_fraction, mode='test')
     val = BasicDataset(dir_img, noise_fraction, mode='val')
 
-    data_loader = DataLoader(train, batch_size=batch_size, shuffle=False, num_workers=16, pin_memory=True)
-    test_loader = DataLoader(test, batch_size=batch_size, shuffle=False, num_workers=16, pin_memory=True)
-    val_loader = DataLoader(val, batch_size=5, shuffle=False, num_workers=16, pin_memory=True)
+    data_loader = DataLoader(train, batch_size=batch_size, shuffle=False, num_workers=8, pin_memory=True, drop_last = True)
+    test_loader = DataLoader(test, batch_size=batch_size, shuffle=False, num_workers=8, drop_last = True, pin_memory=True)
+    val_loader = DataLoader(val, batch_size=5, shuffle=False, num_workers=8, pin_memory=True, drop_last = True)
 
-    val_data, val_labels = next(iter(val_loader))
-    val_data = to_var(val_data, requires_grad=False)
-    val_labels = to_var(val_labels, requires_grad=False)
+    val_data, val_labels, _, _ = next(iter(val_loader))
+    val_data = val_data.cuda()
+    val_labels = val_labels.cuda()
 
     data = iter(data_loader)
+    # 125 clean dataset
+    # vali = iter(val_loader)
     loss = nn.CrossEntropyLoss(reduction="none")
-    writer = SummaryWriter(comment=f'name_{args.figpath}')
-    
-    plot_step = 100
-    plot_step = 100
+    scheduler = StepLR(opt, step_size=50, gamma=0.5, last_epoch=load)
+    writer = SummaryWriter(comment=fig_path)
+
+    plot_step = 10
     global_step = 0
     test_step = 0
 
     logging.info(f'''Starting training:
+        Devices:         {num_gpus}
         Epochs:          {epochs}
         Batch size:      {batch_size}
         Learning rate:   {lr}
@@ -80,46 +90,66 @@ def train_net(noise_fraction,
         Noise fraction:  {noise_fraction}
         Image dir:       {dir_img}
         Model dir:       {fig_path}
+        From epoch:      {load}
     ''')
 
+    meta_net = models.resnet101(pretrained=True, num_classes=9)
+    if torch.cuda.is_available():
+        meta_net.cuda()
 
-    for epoch in range(epochs):
+    for epoch in range(load+1, epochs):
+        net.train()
         epoch_loss = 0
         correct_y = 0
         num_y = 0
         test_num = 0
         correct_num = 0
-        for i in tqdm(range(len(data_loader))):
-            net.train()
+        ws = []
+        wnoisy = []
+        wclean = []
+
+        for i in range(len(data_loader)):
             try:
-                image, labels = next(data)
+                image, labels, marks, _ = next(data)
             except StopIteration:
                 data = iter(data_loader)
-                image, labels = next(data)
-            meta_net = model.resnet101(pretrained=True, num_classes=9)
-            meta_net.load_state_dict(net.state_dict())
+                image, labels, marks, _ = next(data)
+            '''
+            try:
+                val_data, val_labels, _ = next(vali)
+            except StopIteration:
+                vali = iter(val_loader)
+                val_data, val_labels, _ = next(vali)
+            '''
 
-            if torch.cuda.is_available():
-                meta_net.cuda()
+            image = image.cuda()
+            labels = labels.cuda()
+            image.requires_grad = False
+            labels.requires_grad = False
+            '''
+            val_data = val_data.cuda(local_rank)
+            val_labels = val_labels.cuda(local_rank)
+            '''
 
-            image = to_var(image, requires_grad=False)
-            labels = to_var(labels, requires_grad=False)
+            with higher.innerloop_ctx(net, opt) as (meta_net, meta_opt):
+                y_f_hat = meta_net(image)
+                cost = loss(y_f_hat, labels)
+                eps = torch.zeros(cost.size()).cuda()
+                eps = eps.requires_grad_()
 
-            y_f_hat = meta_net(image)
-            cost = loss(y_f_hat, labels)
-            eps = to_var(torch.zeros(cost.size()))
-            l_f_meta = torch.sum(cost * eps)
-            meta_net.zero_grad()
+                l_f_meta = torch.sum(cost * eps)
+                meta_opt.step(l_f_meta)
 
-            grads = torch.autograd.grad(l_f_meta, (meta_net.params()), create_graph=True, allow_unused=True)
-            meta_net.update_params(lr, source_params=grads)
+                y_g_hat = meta_net(val_data)
+                l_g_meta = torch.mean(loss(y_g_hat, val_labels))
 
-            y_g_hat = meta_net(val_data)
-            l_g_meta = torch.mean(loss(y_g_hat, val_labels))
-            grad_eps = torch.autograd.grad(l_g_meta, eps, only_inputs=True)[0]
+                grad_eps = torch.autograd.grad(l_g_meta, eps, only_inputs=True, allow_unused=True)[0].detach()
 
-            w_tilde = torch.clamp(-grad_eps, min=0)
-            norm_c = torch.sum(w_tilde)
+            # w_tilde = torch.clamp(-grad_eps, min=0)
+            w_tilde = torch.sigmoid(-grad_eps)
+
+            norm_c = torch.sum(w_tilde) + 1e-10
+
             if norm_c != 0:
                 w = w_tilde / norm_c
             else:
@@ -127,37 +157,66 @@ def train_net(noise_fraction,
 
             y_f_hat = net(image)
             _, y_predicted = torch.max(y_f_hat, 1)
+
             correct_y = correct_y + (y_predicted.int() == labels.int()).sum().item()
             num_y = num_y + labels.size(0) 
+
             writer.add_scalar('StepAccuracy/train', ((y_predicted.int() == labels.int()).sum().item()/labels.size(0)), global_step)
             
             cost = loss(y_f_hat, labels)
             l_f = torch.sum(cost * w)
+
             writer.add_scalar('StepLoss/train', l_f.item(), global_step)
+
             epoch_loss = epoch_loss + l_f.item()
 
             opt.zero_grad()
             l_f.backward()
+            nn.utils.clip_grad_norm_(net.parameters(), 0.25, norm_type=2)
             opt.step()
             global_step = global_step + 1
+
+            if epoch % 10 == 0:
+                w = w.cpu().numpy()
+                for k in range(marks.shape[0]):
+                    ws.append(w[k])
+                    if marks[k] == 1:
+                        wnoisy.append(w[k])
+                    else:
+                        wclean.append(w[k]) 
             
             if i % plot_step == 0:
                 net.eval()
 
-                acc = []
-                for i, (test_img, test_label) in enumerate(test_loader):
-                    test_img = to_var(test_img, requires_grad=False)
-                    test_label = to_var(test_label, requires_grad=False)
+                for m, (test_img, test_label, _, _) in enumerate(test_loader):
+                    test_img = test_img.cuda()
+                    test_label = test_label.cuda()
+                    test_img.requires_grad = False
+                    test_label.requires_grad = False
 
                     with torch.no_grad():
                         output = net(test_img)
                     _, predicted = torch.max(output, 1)
+
                     test_num = test_num + test_label.size(0)
                     correct_num = correct_num + (predicted.int() == test_label.int()).sum().item()
                     writer.add_scalar('StepAccuracy/test', ((predicted.int() == test_label.int()).sum().item()/test_label.size(0)), test_step)
                     test_step = test_step + 1
-                
+
+        scheduler.step()
+        
+        if epoch % 10 == 0:
+            pickle.dump(ws, open(wdir+'/'+str(load)+"_w.pkl", "wb"))
+            pickle.dump(wnoisy, open(wdir+'/'+str(load)+"_wnoisy.pkl", "wb"))
+            pickle.dump(wclean, open(wdir+'/'+str(load)+"_wclean.pkl", "wb"))
+            print('weight saved')
+        
+        if epoch % 10 == 0:
+            path = 'models/' + fig_path + '/' + str(epoch) + '_model.pth'
+            torch.save(net.state_dict(), path) 
+
         print('epoch ', epoch)
+        print('learning rate: ', opt.param_groups[0]['lr'])
 
         print('epoch loss: ', epoch_loss/len(data_loader))
         writer.add_scalar('EpochLoss/train', epoch_loss/len(data_loader), epoch)
@@ -168,9 +227,7 @@ def train_net(noise_fraction,
         print('test accuracy: ', correct_num/test_num)
         writer.add_scalar('EpochAccuracy/test', correct_num/test_num, epoch)
 
-        path = 'models/' + fig_path + '_model.pth'
-        torch.save(net.state_dict(), path) 
-    
+
     return net
 
 
@@ -191,17 +248,17 @@ def get_args():
                         help='checkpoint path', dest='dir_checkpoint')
     parser.add_argument('-f', '--fig-path', metavar='FP', type=str, nargs='?', default='baseline',
                         help='Fig Path', dest='figpath')
-    # parser.add_argument('-d', '--device-id', metavar='DI', type=str, nargs='?', default='0',
-    #                   help='divices tot use', dest='device_id')
-
+    parser.add_argument('-o', '--load', metavar='LO', type=int, nargs='?', default=-1,
+                        help='load epoch', dest='load')
     return parser.parse_args()
 
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s')
+    torch.backends.cudnn.benchmark = True
     args = get_args()
     try:
-        net = train_net(lr=args.lr, 
+        net = train_net(lr=args.lr,
                                   fig_path=args.figpath,
                                   momentum=0.9, 
                                   batch_size=args.batch_size, 
@@ -209,7 +266,8 @@ if __name__ == '__main__':
                                   save_cp=True,
                                   dir_checkpoint=args.dir_checkpoint,
                                   noise_fraction=args.noise_fraction,
-                                  epochs=args.epochs)
+                                  epochs=args.epochs,
+                                  load = args.load)
         # print('Test Accuracy: ', accuracy)
 
     except KeyboardInterrupt:
